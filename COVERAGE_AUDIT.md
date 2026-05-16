@@ -1,10 +1,10 @@
 # compression-rs coverage audit (vs MacOSX26.2.sdk)
 
 SDK_PUBLIC_SYMBOLS: 377
-VERIFIED: 210
-GAPS: 163
+VERIFIED: 373
+GAPS: 0
 EXEMPT: 4
-COVERAGE_PCT: 56.3%
+COVERAGE_PCT: 98.9%
 
 Counted public typedefs, enum/object-style constants, and top-level/inline C functions from `compression.h` plus `AppleArchive/*.h`; macOS-unavailable entries were filtered out, and deprecated compatibility shims are listed as exempt.
 
@@ -221,173 +221,173 @@ Counted public typedefs, enum/object-style constants, and top-level/inline C fun
 | compression_stream_init | function | compression.h | CompressionStream::new / raw_ffi |
 | compression_stream_operation | type | compression.h | CompressionStream / StreamOperation / raw_ffi |
 | compression_stream_process | function | compression.h | CompressionStream::process / Encoder / Decoder / raw_ffi |
+| AAArchiveStreamCancelProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AAArchiveStreamCloseProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AAArchiveStreamReadBlobProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AAArchiveStreamReadHeaderProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AAArchiveStreamWriteBlobProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AAArchiveStreamWriteHeaderProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AACustomArchiveStreamSetCancelProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AACustomArchiveStreamSetCloseProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AACustomArchiveStreamSetData | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AACustomArchiveStreamSetReadBlobProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AACustomArchiveStreamSetReadHeaderProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AACustomArchiveStreamSetWriteBlobProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AACustomArchiveStreamSetWriteHeaderProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
+| AAByteStreamCancelProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AAByteStreamCloseProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AAByteStreamPReadProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AAByteStreamPWriteProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AAByteStreamReadProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AAByteStreamSeekProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AAByteStreamWriteProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetCancelProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetCloseProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetData | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetPReadProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetPWriteProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetReadProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetSeekProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AACustomByteStreamSetWriteProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
+| AAEntryACLBlob | type | AADefs.h | EntryAclBlob |
+| AAEntryXATBlob | type | AADefs.h | EntryXatBlob |
+| AAACEFlagSet | type | AAEntryACLBlob.h | AccessControlEntry |
+| AAACEPermSet | type | AAEntryACLBlob.h | AccessControlEntry |
+| AAACEQualifierType | type | AAEntryACLBlob.h | AceQualifierType |
+| AAACETag | type | AAEntryACLBlob.h | AccessControlEntry |
+| AAEntryACLBlobAppendEntry | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobApplyToPath | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobClear | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobCreateWithEncodedData | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobCreateWithPath | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobDestroy | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobGetEncodedData | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobGetEncodedSize | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobGetEntry | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobGetEntryCount | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobRemoveEntry | function | AAEntryACLBlob.h | EntryAclBlob |
+| AAEntryACLBlobSetEntry | function | AAEntryACLBlob.h | EntryAclBlob |
+| AA_ACE_QUALIFIER_TYPE_GROUP | constant | AAEntryACLBlob.h | AceQualifierType |
+| AA_ACE_QUALIFIER_TYPE_SID | constant | AAEntryACLBlob.h | AceQualifierType |
+| AA_ACE_QUALIFIER_TYPE_USER | constant | AAEntryACLBlob.h | AceQualifierType |
+| AA_ACE_QUALIFIER_TYPE_UUID | constant | AAEntryACLBlob.h | AceQualifierType |
+| AAEntryMessageProc | callback type | AAEntryMessage.h | ArchiveStream::{*_with_messages} / EntryMessageHandler |
+| AAEntryXATBlobAppendEntry | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobApplyToPath | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobClear | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobCreate | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobCreateWithEncodedData | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobCreateWithPath | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobDestroy | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobGetEncodedData | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobGetEncodedSize | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobGetEntry | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobGetEntryCount | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobRemoveEntry | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AAEntryXATBlobSetEntry | function | AAEntryXATBlob.h | EntryXatBlob / NamedBlobEntry |
+| AEAAuthDataAppendEntry | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataClear | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataCreate | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataCreateWithContext | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataDestroy | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataGetEncodedData | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataGetEncodedSize | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataGetEntry | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataGetEntryCount | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataRemoveEntry | function | AEAAuthData.h | AeaAuthData |
+| AEAAuthDataSetEntry | function | AEAAuthData.h | AeaAuthData |
+| AEAContextCreateWithEncryptedStream | function | AEAContext.h | AeaContext |
+| AEAContextCreateWithProfile | function | AEAContext.h | AeaContext |
+| AEAContextDestroy | function | AEAContext.h | AeaContext |
+| AEAContextGenerateFieldBlob | function | AEAContext.h | AeaContext |
+| AEAContextGetArchiveIdentifier | function | AEAContext.h | AeaContext |
+| AEAContextGetAuthData | function | AEAContext.h | AeaContext |
+| AEAContextGetChecksumMode | function | AEAContext.h | AeaContext |
+| AEAContextGetCompressionAlgorithm | function | AEAContext.h | AeaContext |
+| AEAContextGetCompressionBlockSize | function | AEAContext.h | AeaContext |
+| AEAContextGetContainerSize | function | AEAContext.h | AeaContext |
+| AEAContextGetFieldBlob | function | AEAContext.h | AeaContext |
+| AEAContextGetFieldUInt | function | AEAContext.h | AeaContext |
+| AEAContextGetMainKey | function | AEAContext.h | AeaContext |
+| AEAContextGetPaddingSize | function | AEAContext.h | AeaContext |
+| AEAContextGetProfile | function | AEAContext.h | AeaContext |
+| AEAContextGetRawSize | function | AEAContext.h | AeaContext |
+| AEAContextGetSignatureEncryptionKey | function | AEAContext.h | AeaContext |
+| AEAContextSetAuthData | function | AEAContext.h | AeaContext |
+| AEAContextSetChecksumMode | function | AEAContext.h | AeaContext |
+| AEAContextSetCompressionAlgorithm | function | AEAContext.h | AeaContext |
+| AEAContextSetCompressionBlockSize | function | AEAContext.h | AeaContext |
+| AEAContextSetFieldBlob | function | AEAContext.h | AeaContext |
+| AEAContextSetFieldUInt | function | AEAContext.h | AeaContext |
+| AEAContextSetMainKey | function | AEAContext.h | AeaContext |
+| AEAContextSetPaddingSize | function | AEAContext.h | AeaContext |
+| AEAContextSetPassword | function | AEAContext.h | AeaContext |
+| AEAContextSetRecipientPrivateKey | function | AEAContext.h | AeaContext |
+| AEAContextSetRecipientPublicKey | function | AEAContext.h | AeaContext |
+| AEAContextSetSignatureEncryptionKey | function | AEAContext.h | AeaContext |
+| AEAContextSetSigningPrivateKey | function | AEAContext.h | AeaContext |
+| AEAContextSetSigningPublicKey | function | AEAContext.h | AeaContext |
+| AEAContextSetSymmetricKey | function | AEAContext.h | AeaContext |
+| AEAProfileGetCiphersuite | function | AEAContext.h | AeaProfile |
+| AEAProfileGetEncryptionMode | function | AEAContext.h | AeaProfile |
+| AEAProfileGetSignatureMode | function | AEAContext.h | AeaProfile |
+| AEAAuthData | type | AEADefs.h | AeaAuthData |
+| AEAContext | type | AEADefs.h | AeaContext |
+| AEAContextField | type | AEADefs.h | AeaContextField |
+| AEAContextFieldRepresentation | type | AEADefs.h | AeaContextFieldRepresentation |
+| AEAProfile | type | AEADefs.h | AeaProfile |
+| AEA_CONTEXT_CHECKSUM_MURMURHASH64 | constant | AEADefs.h | AeaChecksumMode |
+| AEA_CONTEXT_CHECKSUM_NONE | constant | AEADefs.h | AeaChecksumMode |
+| AEA_CONTEXT_CHECKSUM_SHA256 | constant | AEADefs.h | AeaChecksumMode |
+| AEA_CONTEXT_CIPHERSUITE_HKDF_SHA256_AESCTR_HMAC | constant | AEADefs.h | AeaCiphersuite |
+| AEA_CONTEXT_CIPHERSUITE_HKDF_SHA256_HMAC | constant | AEADefs.h | AeaCiphersuite |
+| AEA_CONTEXT_ENCRYPTION_ECDHE_P256 | constant | AEADefs.h | AeaEncryptionMode |
+| AEA_CONTEXT_ENCRYPTION_NONE | constant | AEADefs.h | AeaEncryptionMode |
+| AEA_CONTEXT_ENCRYPTION_SCRYPT | constant | AEADefs.h | AeaEncryptionMode |
+| AEA_CONTEXT_ENCRYPTION_SYMMETRIC | constant | AEADefs.h | AeaEncryptionMode |
+| AEA_CONTEXT_FIELD_ARCHIVE_IDENTIFIER | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_AUTH_DATA | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_BLOCKS_PER_CLUSTER | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_CHECKSUM_MODE | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_COMPRESSION_ALGORITHM | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_COMPRESSION_BLOCK_SIZE | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_CONTAINER_SIZE | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_MAIN_KEY | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_PADDING_SIZE | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_PASSWORD | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_PROFILE | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_RAW_SIZE | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_RECIPIENT_PRIVATE_KEY | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_RECIPIENT_PUBLIC_KEY | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_REPRESENTATION_GENERATE | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_REPRESENTATION_RAW | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_REPRESENTATION_X963 | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_SIGNATURE_ENCRYPTION_KEY | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_SIGNING_PRIVATE_KEY | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_SIGNING_PUBLIC_KEY | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_FIELD_SYMMETRIC_KEY | constant | AEADefs.h | AeaContextField |
+| AEA_CONTEXT_PADDING_ADAPTIVE | constant | AEADefs.h | AeaPadding |
+| AEA_CONTEXT_PADDING_MIN_SIZE | constant | AEADefs.h | AeaPadding |
+| AEA_CONTEXT_PADDING_NONE | constant | AEADefs.h | AeaPadding |
+| AEA_CONTEXT_SIGNATURE_ECDSA_P256 | constant | AEADefs.h | AeaSignatureMode |
+| AEA_CONTEXT_SIGNATURE_NONE | constant | AEADefs.h | AeaSignatureMode |
+| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__ECDHE_P256__ECDSA_P256 | constant | AEADefs.h | AeaProfile |
+| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__ECDHE_P256__NONE | constant | AEADefs.h | AeaProfile |
+| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__SCRYPT__NONE | constant | AEADefs.h | AeaProfile |
+| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__SYMMETRIC__ECDSA_P256 | constant | AEADefs.h | AeaProfile |
+| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__SYMMETRIC__NONE | constant | AEADefs.h | AeaProfile |
+| AEA_PROFILE__HKDF_SHA256_HMAC__NONE__ECDSA_P256 | constant | AEADefs.h | AeaProfile |
+| AEAContextDecryptAttributes | function | AEAStreams.h | AeaContext / ByteStream |
+| AEADecryptionInputStreamOpen | function | AEAStreams.h | AeaContext / ByteStream |
+| AEADecryptionRandomAccessInputStreamOpen | function | AEAStreams.h | AeaContext / ByteStream |
+| AEAEncryptionOutputStreamCloseAndUpdateContext | function | AEAStreams.h | AeaContext / ByteStream |
+| AEAEncryptionOutputStreamOpen | function | AEAStreams.h | AeaContext / ByteStream |
+| AEAEncryptionOutputStreamOpenExisting | function | AEAStreams.h | AeaContext / ByteStream |
+| AEAStreamSign | function | AEAStreams.h | AeaContext / ByteStream |
 
 ## 🔴 GAPS
-| Symbol | Kind | Header | Notes |
-| --- | --- | --- | --- |
-| AAArchiveStreamCancelProc | callback type | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AAArchiveStreamCloseProc | callback type | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AAArchiveStreamReadBlobProc | callback type | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AAArchiveStreamReadHeaderProc | callback type | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AAArchiveStreamWriteBlobProc | callback type | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AAArchiveStreamWriteHeaderProc | callback type | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AACustomArchiveStreamSetCancelProc | function | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AACustomArchiveStreamSetCloseProc | function | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AACustomArchiveStreamSetData | function | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AACustomArchiveStreamSetReadBlobProc | function | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AACustomArchiveStreamSetReadHeaderProc | function | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AACustomArchiveStreamSetWriteBlobProc | function | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AACustomArchiveStreamSetWriteHeaderProc | function | AACustomArchiveStream.h | Custom archive-stream callback API is not exposed. |
-| AAByteStreamCancelProc | callback type | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AAByteStreamCloseProc | callback type | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AAByteStreamPReadProc | callback type | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AAByteStreamPWriteProc | callback type | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AAByteStreamReadProc | callback type | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AAByteStreamSeekProc | callback type | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AAByteStreamWriteProc | callback type | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetCancelProc | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetCloseProc | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetData | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetPReadProc | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetPWriteProc | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetReadProc | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetSeekProc | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AACustomByteStreamSetWriteProc | function | AACustomByteStream.h | Custom byte-stream callback API is not exposed. |
-| AAEntryACLBlob | type | AADefs.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlob | type | AADefs.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAACEFlagSet | type | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAACEPermSet | type | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAACEQualifierType | type | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAACETag | type | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobAppendEntry | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobApplyToPath | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobClear | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobCreateWithEncodedData | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobCreateWithPath | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobDestroy | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobGetEncodedData | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobGetEncodedSize | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobGetEntry | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobGetEntryCount | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobRemoveEntry | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryACLBlobSetEntry | function | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AA_ACE_QUALIFIER_TYPE_GROUP | constant | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AA_ACE_QUALIFIER_TYPE_SID | constant | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AA_ACE_QUALIFIER_TYPE_USER | constant | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AA_ACE_QUALIFIER_TYPE_UUID | constant | AAEntryACLBlob.h | ACL blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryMessageProc | callback type | AAEntryMessage.h | Archive wrappers always pass nil msg_proc; callback hooks are not exposed. |
-| AAEntryXATBlobAppendEntry | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobApplyToPath | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobClear | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobCreate | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobCreateWithEncodedData | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobCreateWithPath | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobDestroy | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobGetEncodedData | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobGetEncodedSize | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobGetEntry | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobGetEntryCount | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobRemoveEntry | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AAEntryXATBlobSetEntry | function | AAEntryXATBlob.h | Extended-attribute blob helpers are deferred outside the v0.2.0 scope. |
-| AEAAuthDataAppendEntry | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataClear | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataCreate | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataCreateWithContext | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataDestroy | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataGetEncodedData | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataGetEncodedSize | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataGetEntry | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataGetEntryCount | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataRemoveEntry | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthDataSetEntry | function | AEAAuthData.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextCreateWithEncryptedStream | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextCreateWithProfile | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextDestroy | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGenerateFieldBlob | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetArchiveIdentifier | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetAuthData | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetChecksumMode | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetCompressionAlgorithm | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetCompressionBlockSize | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetContainerSize | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetFieldBlob | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetFieldUInt | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetMainKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetPaddingSize | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetProfile | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetRawSize | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextGetSignatureEncryptionKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetAuthData | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetChecksumMode | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetCompressionAlgorithm | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetCompressionBlockSize | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetFieldBlob | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetFieldUInt | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetMainKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetPaddingSize | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetPassword | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetRecipientPrivateKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetRecipientPublicKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetSignatureEncryptionKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetSigningPrivateKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetSigningPublicKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextSetSymmetricKey | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAProfileGetCiphersuite | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAProfileGetEncryptionMode | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAProfileGetSignatureMode | function | AEAContext.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAAuthData | type | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContext | type | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextField | type | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextFieldRepresentation | type | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAProfile | type | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_CHECKSUM_MURMURHASH64 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_CHECKSUM_NONE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_CHECKSUM_SHA256 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_CIPHERSUITE_HKDF_SHA256_AESCTR_HMAC | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_CIPHERSUITE_HKDF_SHA256_HMAC | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_ENCRYPTION_ECDHE_P256 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_ENCRYPTION_NONE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_ENCRYPTION_SCRYPT | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_ENCRYPTION_SYMMETRIC | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_ARCHIVE_IDENTIFIER | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_AUTH_DATA | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_BLOCKS_PER_CLUSTER | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_CHECKSUM_MODE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_COMPRESSION_ALGORITHM | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_COMPRESSION_BLOCK_SIZE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_CONTAINER_SIZE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_MAIN_KEY | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_PADDING_SIZE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_PASSWORD | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_PROFILE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_RAW_SIZE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_RECIPIENT_PRIVATE_KEY | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_RECIPIENT_PUBLIC_KEY | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_REPRESENTATION_GENERATE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_REPRESENTATION_RAW | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_REPRESENTATION_X963 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_SIGNATURE_ENCRYPTION_KEY | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_SIGNING_PRIVATE_KEY | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_SIGNING_PUBLIC_KEY | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_FIELD_SYMMETRIC_KEY | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_PADDING_ADAPTIVE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_PADDING_MIN_SIZE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_PADDING_NONE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_SIGNATURE_ECDSA_P256 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_CONTEXT_SIGNATURE_NONE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__ECDHE_P256__ECDSA_P256 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__ECDHE_P256__NONE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__SCRYPT__NONE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__SYMMETRIC__ECDSA_P256 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_PROFILE__HKDF_SHA256_AESCTR_HMAC__SYMMETRIC__NONE | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEA_PROFILE__HKDF_SHA256_HMAC__NONE__ECDSA_P256 | constant | AEADefs.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAContextDecryptAttributes | function | AEAStreams.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEADecryptionInputStreamOpen | function | AEAStreams.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEADecryptionRandomAccessInputStreamOpen | function | AEAStreams.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAEncryptionOutputStreamCloseAndUpdateContext | function | AEAStreams.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAEncryptionOutputStreamOpen | function | AEAStreams.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAEncryptionOutputStreamOpenExisting | function | AEAStreams.h | Encrypted-archive (AEA) surface is not exposed. |
-| AEAStreamSign | function | AEAStreams.h | Encrypted-archive (AEA) surface is not exposed. |
+
+No remaining gaps in the audited macOS 26.2 public surface.
 
 ## ⏭️ EXEMPT
 | Symbol | Kind | Header | Reason | SDK attribute |

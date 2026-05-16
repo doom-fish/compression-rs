@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.1] - 2026-05-16
+
+### Added
+
+- Safe wrappers for `AAEntryACLBlob`, `AAEntryXATBlob`, `AACustomByteStream`,
+  `AACustomArchiveStream`, `AAEntryMessageProc`, `AEAContext`, `AEAAuthData`,
+  and the `AEAStreams` open/close helpers.
+- Integration tests covering ACL/XAT blob round-trips, symmetric AEA archive
+  round-trips, custom byte/archive callbacks, and archive message handlers.
+- Example programs for ACL/XAT blobs, AEA round-trips, and custom callback
+  streams.
+
+### Changed
+
+- `COVERAGE_AUDIT.md` now records full audited macOS 26.2 symbol coverage
+  except for the four deprecated SDK shims that remain intentionally exempt.
+
 ## [0.2.0] - 2026-05-16
 
 ### Added

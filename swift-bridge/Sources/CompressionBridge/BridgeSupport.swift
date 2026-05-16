@@ -105,3 +105,61 @@ final class AAPathListBox {
         }
     }
 }
+
+final class AAEntryACLBlobBox {
+    var raw: OpaquePointer?
+
+    init(raw: OpaquePointer) {
+        self.raw = raw
+    }
+
+    deinit {
+        if let raw {
+            __AAEntryACLBlobDestroy(raw)
+        }
+    }
+}
+
+final class AAEntryXATBlobBox {
+    var raw: OpaquePointer?
+
+    init(raw: OpaquePointer) {
+        self.raw = raw
+    }
+
+    deinit {
+        if let raw {
+            __AAEntryXATBlobDestroy(raw)
+        }
+    }
+}
+
+final class AEAAuthDataBox {
+    var raw: OpaquePointer?
+
+    init(raw: OpaquePointer) {
+        self.raw = raw
+    }
+
+    deinit {
+        if let raw {
+            if #available(macOS 11.3, *) {
+                __AEAAuthDataDestroy(raw)
+            }
+        }
+    }
+}
+
+final class AEAContextBox {
+    var raw: OpaquePointer?
+
+    init(raw: OpaquePointer) {
+        self.raw = raw
+    }
+
+    deinit {
+        if let raw {
+            __AEAContextDestroy(raw)
+        }
+    }
+}

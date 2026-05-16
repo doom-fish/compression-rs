@@ -76,3 +76,66 @@ unsafe extern "C" {
     ) -> i64;
     pub fn compression_rs_aa_byte_stream_release(handle: *mut c_void);
 }
+
+pub type CustomByteStreamWriteProc = unsafe extern "C" fn(
+    arg: *mut c_void,
+    buffer: *const c_void,
+    length: usize,
+) -> i64;
+pub type CustomByteStreamPWriteProc = unsafe extern "C" fn(
+    arg: *mut c_void,
+    buffer: *const c_void,
+    length: usize,
+    offset: i64,
+) -> i64;
+pub type CustomByteStreamReadProc = unsafe extern "C" fn(
+    arg: *mut c_void,
+    buffer: *mut c_void,
+    length: usize,
+) -> i64;
+pub type CustomByteStreamPReadProc = unsafe extern "C" fn(
+    arg: *mut c_void,
+    buffer: *mut c_void,
+    length: usize,
+    offset: i64,
+) -> i64;
+pub type CustomByteStreamSeekProc = unsafe extern "C" fn(
+    arg: *mut c_void,
+    offset: i64,
+    whence: i32,
+) -> i64;
+pub type CustomByteStreamCancelProc = unsafe extern "C" fn(arg: *mut c_void);
+pub type CustomByteStreamCloseProc = unsafe extern "C" fn(arg: *mut c_void) -> i32;
+
+unsafe extern "C" {
+    pub fn compression_rs_aa_custom_byte_stream_open() -> *mut c_void;
+    pub fn compression_rs_aa_custom_byte_stream_set_data(handle: *mut c_void, data: *mut c_void);
+    pub fn compression_rs_aa_custom_byte_stream_set_write_proc(
+        handle: *mut c_void,
+        proc: Option<CustomByteStreamWriteProc>,
+    );
+    pub fn compression_rs_aa_custom_byte_stream_set_pwrite_proc(
+        handle: *mut c_void,
+        proc: Option<CustomByteStreamPWriteProc>,
+    );
+    pub fn compression_rs_aa_custom_byte_stream_set_read_proc(
+        handle: *mut c_void,
+        proc: Option<CustomByteStreamReadProc>,
+    );
+    pub fn compression_rs_aa_custom_byte_stream_set_pread_proc(
+        handle: *mut c_void,
+        proc: Option<CustomByteStreamPReadProc>,
+    );
+    pub fn compression_rs_aa_custom_byte_stream_set_seek_proc(
+        handle: *mut c_void,
+        proc: Option<CustomByteStreamSeekProc>,
+    );
+    pub fn compression_rs_aa_custom_byte_stream_set_cancel_proc(
+        handle: *mut c_void,
+        proc: Option<CustomByteStreamCancelProc>,
+    );
+    pub fn compression_rs_aa_custom_byte_stream_set_close_proc(
+        handle: *mut c_void,
+        proc: Option<CustomByteStreamCloseProc>,
+    );
+}

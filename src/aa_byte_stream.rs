@@ -25,6 +25,18 @@ pub enum ArchiveCompressionAlgorithm {
 }
 
 impl ArchiveCompressionAlgorithm {
+    pub const fn from_raw(raw: u32) -> Option<Self> {
+        match raw {
+            0x000 => Some(Self::None),
+            0x100 => Some(Self::Lz4),
+            0x505 => Some(Self::Zlib),
+            0x306 => Some(Self::Lzma),
+            0x801 => Some(Self::Lzfse),
+            0x702 => Some(Self::Lzbitmap),
+            _ => None,
+        }
+    }
+
     pub const fn as_raw(self) -> u32 {
         match self {
             Self::None => 0x000,
@@ -109,7 +121,7 @@ impl BitAndAssign for ArchiveFlags {
 
 #[allow(dead_code)]
 #[derive(Debug)]
-enum ByteStreamUpstream {
+pub enum ByteStreamUpstream {
     Stream(Box<ByteStream>),
 }
 
@@ -121,6 +133,18 @@ pub struct ByteStream {
 }
 
 impl ByteStream {
+    pub(crate) fn from_handle_with_upstream(
+        handle: *mut c_void,
+        operation: &'static str,
+        upstream: Option<ByteStreamUpstream>,
+    ) -> Result<Self> {
+        Ok(Self {
+            handle: util::nonnull_handle(handle, operation)?,
+            _upstream: upstream,
+            closed: false,
+        })
+    }
+
     pub fn from_fd(fd: RawFd, automatic_close: bool) -> Result<Self> {
         let handle = unsafe {
             ffi::aa_byte_stream::compression_rs_aa_byte_stream_open_with_fd(fd, automatic_close)
@@ -188,6 +212,10 @@ impl ByteStream {
 
     pub(crate) fn as_ptr(&self) -> *mut c_void {
         self.handle.as_ptr()
+    }
+
+    pub(crate) fn mark_closed(&mut self) {
+        self.closed = true;
     }
 
     fn ensure_open(&self) -> Result<()> {
@@ -410,5 +438,226 @@ impl ByteStream {
 impl Drop for ByteStream {
     fn drop(&mut self) {
         unsafe { ffi::aa_byte_stream::compression_rs_aa_byte_stream_release(self.as_ptr()) };
+    }
+}
+
+fn custom_byte_stream_error(operation: &'static str) -> CompressionError {
+    CompressionError::OperationFailed {
+        operation,
+        code: -1,
+    }
+}
+
+fn custom_byte_stream_code(error: &CompressionError) -> i32 {
+    match error {
+        CompressionError::OperationFailed { code, .. } if *code < 0 => *code,
+        _ => -1,
+    }
+}
+
+struct CustomByteStreamState {
+    callbacks: Box<dyn CustomByteStreamCallbacks>,
+}
+
+pub trait CustomByteStreamCallbacks {
+    fn write(&mut self, _buffer: &[u8]) -> Result<usize> {
+        Err(custom_byte_stream_error("AAByteStreamWrite"))
+    }
+
+    fn pwrite(&mut self, _buffer: &[u8], _offset: i64) -> Result<usize> {
+        Err(custom_byte_stream_error("AAByteStreamPWrite"))
+    }
+
+    fn read(&mut self, _buffer: &mut [u8]) -> Result<usize> {
+        Err(custom_byte_stream_error("AAByteStreamRead"))
+    }
+
+    fn pread(&mut self, _buffer: &mut [u8], _offset: i64) -> Result<usize> {
+        Err(custom_byte_stream_error("AAByteStreamPRead"))
+    }
+
+    fn seek(&mut self, _offset: i64, _whence: i32) -> Result<i64> {
+        Err(custom_byte_stream_error("AAByteStreamSeek"))
+    }
+
+    fn cancel(&mut self) {}
+
+    fn close(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+unsafe fn custom_byte_stream_slice<'a>(buffer: *const c_void, length: usize) -> Option<&'a [u8]> {
+    if length == 0 {
+        Some(&[])
+    } else if buffer.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(buffer.cast::<u8>(), length) })
+    }
+}
+
+unsafe fn custom_byte_stream_slice_mut<'a>(
+    buffer: *mut c_void,
+    length: usize,
+) -> Option<&'a mut [u8]> {
+    if length == 0 {
+        Some(&mut [])
+    } else if buffer.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts_mut(buffer.cast::<u8>(), length) })
+    }
+}
+
+unsafe fn custom_byte_stream_state(arg: *mut c_void) -> Option<&'static mut CustomByteStreamState> {
+    if arg.is_null() {
+        None
+    } else {
+        Some(unsafe { &mut *arg.cast::<CustomByteStreamState>() })
+    }
+}
+
+unsafe extern "C" fn custom_byte_stream_write(
+    arg: *mut c_void,
+    buffer: *const c_void,
+    length: usize,
+) -> i64 {
+    let Some(state) = (unsafe { custom_byte_stream_state(arg) }) else {
+        return -1;
+    };
+    let Some(buffer) = (unsafe { custom_byte_stream_slice(buffer, length) }) else {
+        return -1;
+    };
+    match state.callbacks.write(buffer) {
+        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    }
+}
+
+unsafe extern "C" fn custom_byte_stream_pwrite(
+    arg: *mut c_void,
+    buffer: *const c_void,
+    length: usize,
+    offset: i64,
+) -> i64 {
+    let Some(state) = (unsafe { custom_byte_stream_state(arg) }) else {
+        return -1;
+    };
+    let Some(buffer) = (unsafe { custom_byte_stream_slice(buffer, length) }) else {
+        return -1;
+    };
+    match state.callbacks.pwrite(buffer, offset) {
+        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    }
+}
+
+unsafe extern "C" fn custom_byte_stream_read(
+    arg: *mut c_void,
+    buffer: *mut c_void,
+    length: usize,
+) -> i64 {
+    let Some(state) = (unsafe { custom_byte_stream_state(arg) }) else {
+        return -1;
+    };
+    let Some(buffer) = (unsafe { custom_byte_stream_slice_mut(buffer, length) }) else {
+        return -1;
+    };
+    match state.callbacks.read(buffer) {
+        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    }
+}
+
+unsafe extern "C" fn custom_byte_stream_pread(
+    arg: *mut c_void,
+    buffer: *mut c_void,
+    length: usize,
+    offset: i64,
+) -> i64 {
+    let Some(state) = (unsafe { custom_byte_stream_state(arg) }) else {
+        return -1;
+    };
+    let Some(buffer) = (unsafe { custom_byte_stream_slice_mut(buffer, length) }) else {
+        return -1;
+    };
+    match state.callbacks.pread(buffer, offset) {
+        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    }
+}
+
+unsafe extern "C" fn custom_byte_stream_seek(arg: *mut c_void, offset: i64, whence: i32) -> i64 {
+    let Some(state) = (unsafe { custom_byte_stream_state(arg) }) else {
+        return -1;
+    };
+    match state.callbacks.seek(offset, whence) {
+        Ok(position) => position,
+        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    }
+}
+
+unsafe extern "C" fn custom_byte_stream_cancel(arg: *mut c_void) {
+    if let Some(state) = unsafe { custom_byte_stream_state(arg) } {
+        state.callbacks.cancel();
+    }
+}
+
+unsafe extern "C" fn custom_byte_stream_close(arg: *mut c_void) -> i32 {
+    if arg.is_null() {
+        return 0;
+    }
+    let mut state = unsafe { Box::from_raw(arg.cast::<CustomByteStreamState>()) };
+    match state.callbacks.close() {
+        Ok(()) => 0,
+        Err(error) => custom_byte_stream_code(&error),
+    }
+}
+
+impl ByteStream {
+    pub fn custom<T: CustomByteStreamCallbacks + 'static>(callbacks: T) -> Result<Self> {
+        let handle =
+            unsafe { ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_open() };
+        let stream = Self::from_handle_with_upstream(handle, "AACustomByteStreamOpen", None)?;
+        let state = Box::new(CustomByteStreamState {
+            callbacks: Box::new(callbacks),
+        });
+        let data = Box::into_raw(state).cast::<c_void>();
+        unsafe {
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_data(
+                stream.as_ptr(),
+                data,
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_write_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_write),
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_pwrite_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_pwrite),
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_read_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_read),
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_pread_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_pread),
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_seek_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_seek),
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_cancel_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_cancel),
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_close_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_close),
+            );
+        }
+        Ok(stream)
     }
 }

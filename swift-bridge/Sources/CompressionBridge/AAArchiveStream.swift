@@ -195,3 +195,218 @@ public func compressionRsAAArchiveStreamProcess(
 public func compressionRsAAArchiveStreamRelease(_ handle: UnsafeMutableRawPointer?) {
     release(handle, as: AAArchiveStreamBox.self)
 }
+
+public typealias CompressionRsAAArchiveStreamWriteHeaderProc = @convention(c) (UnsafeMutableRawPointer?, OpaquePointer) -> Int32
+public typealias CompressionRsAAArchiveStreamWriteBlobProc = @convention(c) (UnsafeMutableRawPointer?, __AAFieldKey, UnsafeRawPointer, Int) -> Int32
+public typealias CompressionRsAAArchiveStreamReadHeaderProc = @convention(c) (UnsafeMutableRawPointer?, UnsafeMutablePointer<OpaquePointer?>) -> Int32
+public typealias CompressionRsAAArchiveStreamReadBlobProc = @convention(c) (UnsafeMutableRawPointer?, __AAFieldKey, UnsafeMutableRawPointer, Int) -> Int32
+public typealias CompressionRsAAArchiveStreamCancelProc = @convention(c) (UnsafeMutableRawPointer?) -> Void
+public typealias CompressionRsAAArchiveStreamCloseProc = @convention(c) (UnsafeMutableRawPointer?) -> Int32
+
+@_cdecl("compression_rs_aa_custom_archive_stream_open")
+public func compressionRsAACustomArchiveStreamOpen() -> UnsafeMutableRawPointer? {
+    guard let raw = __AACustomArchiveStreamOpen() else { return nil }
+    return retain(AAArchiveStreamBox(raw: raw))
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_data")
+public func compressionRsAACustomArchiveStreamSetData(
+    _ handle: UnsafeMutableRawPointer?,
+    _ data: UnsafeMutableRawPointer?
+) {
+    guard let handle else { return }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomArchiveStreamSetData(raw, data)
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_write_header_proc")
+public func compressionRsAACustomArchiveStreamSetWriteHeaderProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: (@convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer) -> Int32)?
+) {
+    guard let handle else { return }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    guard let raw = box.raw else { return }
+    let typedProc = proc.map { unsafeBitCast($0, to: CompressionRsAAArchiveStreamWriteHeaderProc.self) }
+    __AACustomArchiveStreamSetWriteHeaderProc(raw, typedProc)
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_write_blob_proc")
+public func compressionRsAACustomArchiveStreamSetWriteBlobProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: (@convention(c) (UnsafeMutableRawPointer?, UInt32, UnsafeRawPointer, Int) -> Int32)?
+) {
+    guard let handle else { return }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    guard let raw = box.raw else { return }
+    let typedProc = proc.map { unsafeBitCast($0, to: CompressionRsAAArchiveStreamWriteBlobProc.self) }
+    __AACustomArchiveStreamSetWriteBlobProc(raw, typedProc)
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_read_header_proc")
+public func compressionRsAACustomArchiveStreamSetReadHeaderProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: (@convention(c) (UnsafeMutableRawPointer?, UnsafeMutablePointer<UnsafeMutableRawPointer?>) -> Int32)?
+) {
+    guard let handle else { return }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    guard let raw = box.raw else { return }
+    let typedProc = proc.map { unsafeBitCast($0, to: CompressionRsAAArchiveStreamReadHeaderProc.self) }
+    __AACustomArchiveStreamSetReadHeaderProc(raw, typedProc)
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_read_blob_proc")
+public func compressionRsAACustomArchiveStreamSetReadBlobProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: (@convention(c) (UnsafeMutableRawPointer?, UInt32, UnsafeMutableRawPointer, Int) -> Int32)?
+) {
+    guard let handle else { return }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    guard let raw = box.raw else { return }
+    let typedProc = proc.map { unsafeBitCast($0, to: CompressionRsAAArchiveStreamReadBlobProc.self) }
+    __AACustomArchiveStreamSetReadBlobProc(raw, typedProc)
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_cancel_proc")
+public func compressionRsAACustomArchiveStreamSetCancelProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAArchiveStreamCancelProc?
+) {
+    guard let handle else { return }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomArchiveStreamSetCancelProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_close_proc")
+public func compressionRsAACustomArchiveStreamSetCloseProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAArchiveStreamCloseProc?
+) {
+    guard let handle else { return }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomArchiveStreamSetCloseProc(raw, proc)
+}
+
+public typealias CompressionRsAAEntryMessageProc = @convention(c) (UnsafeMutableRawPointer?, UInt32, UnsafePointer<CChar>, UnsafeMutableRawPointer?) -> Int32
+
+@_cdecl("compression_rs_aa_extract_archive_output_stream_open_with_messages")
+public func compressionRsAAExtractArchiveOutputStreamOpenWithMessages(
+    _ dir: UnsafePointer<CChar>?,
+    _ flags: UInt64,
+    _ nThreads: Int32,
+    _ arg: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAEntryMessageProc?
+) -> UnsafeMutableRawPointer? {
+    guard let dir else { return nil }
+    let typedProc = proc.map { unsafeBitCast($0, to: __AAEntryMessageProc.self) }
+    guard let raw = __AAExtractArchiveOutputStreamOpen(dir, arg, typedProc, __AAFlagSet(flags), nThreads)
+    else {
+        return nil
+    }
+    return retain(AAArchiveStreamBox(raw: raw))
+}
+
+@_cdecl("compression_rs_aa_encode_archive_output_stream_open_with_messages")
+public func compressionRsAAEncodeArchiveOutputStreamOpenWithMessages(
+    _ handle: UnsafeMutableRawPointer?,
+    _ flags: UInt64,
+    _ nThreads: Int32,
+    _ arg: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAEntryMessageProc?
+) -> UnsafeMutableRawPointer? {
+    guard let handle else { return nil }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    let typedProc = proc.map { unsafeBitCast($0, to: __AAEntryMessageProc.self) }
+    guard let raw = box.raw,
+          let stream = __AAEncodeArchiveOutputStreamOpen(raw, arg, typedProc, __AAFlagSet(flags), nThreads)
+    else {
+        return nil
+    }
+    return retain(AAArchiveStreamBox(raw: stream))
+}
+
+@_cdecl("compression_rs_aa_decode_archive_input_stream_open_with_messages")
+public func compressionRsAADecodeArchiveInputStreamOpenWithMessages(
+    _ handle: UnsafeMutableRawPointer?,
+    _ flags: UInt64,
+    _ nThreads: Int32,
+    _ arg: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAEntryMessageProc?
+) -> UnsafeMutableRawPointer? {
+    guard let handle else { return nil }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    let typedProc = proc.map { unsafeBitCast($0, to: __AAEntryMessageProc.self) }
+    guard let raw = box.raw,
+          let stream = __AADecodeArchiveInputStreamOpen(raw, arg, typedProc, __AAFlagSet(flags), nThreads)
+    else {
+        return nil
+    }
+    return retain(AAArchiveStreamBox(raw: stream))
+}
+
+@_cdecl("compression_rs_aa_convert_archive_output_stream_open_with_messages")
+public func compressionRsAAConvertArchiveOutputStreamOpenWithMessages(
+    _ handle: UnsafeMutableRawPointer?,
+    _ insertKeySet: UnsafeMutableRawPointer?,
+    _ removeKeySet: UnsafeMutableRawPointer?,
+    _ flags: UInt64,
+    _ nThreads: Int32,
+    _ arg: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAEntryMessageProc?
+) -> UnsafeMutableRawPointer? {
+    guard let handle, let insertKeySet, let removeKeySet else { return nil }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    let insertBox: AAFieldKeySetBox = unretained(insertKeySet, as: AAFieldKeySetBox.self)
+    let removeBox: AAFieldKeySetBox = unretained(removeKeySet, as: AAFieldKeySetBox.self)
+    let typedProc = proc.map { unsafeBitCast($0, to: __AAEntryMessageProc.self) }
+    guard let raw = box.raw,
+          let insertRaw = insertBox.raw,
+          let removeRaw = removeBox.raw,
+          let stream = __AAConvertArchiveOutputStreamOpen(raw, insertRaw, removeRaw, arg, typedProc, __AAFlagSet(flags), nThreads)
+    else {
+        return nil
+    }
+    return retain(AAArchiveStreamBox(raw: stream))
+}
+
+@_cdecl("compression_rs_aa_archive_stream_write_path_list_with_messages")
+public func compressionRsAAArchiveStreamWritePathListWithMessages(
+    _ handle: UnsafeMutableRawPointer?,
+    _ pathList: UnsafeMutableRawPointer?,
+    _ keySet: UnsafeMutableRawPointer?,
+    _ dir: UnsafePointer<CChar>?,
+    _ flags: UInt64,
+    _ nThreads: Int32,
+    _ arg: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAEntryMessageProc?
+) -> Int32 {
+    guard let handle, let pathList, let keySet, let dir else { return -1 }
+    let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
+    let pathListBox: AAPathListBox = unretained(pathList, as: AAPathListBox.self)
+    let keySetBox: AAFieldKeySetBox = unretained(keySet, as: AAFieldKeySetBox.self)
+    let typedProc = proc.map { unsafeBitCast($0, to: __AAEntryMessageProc.self) }
+    guard let raw = box.raw, let pathListRaw = pathListBox.raw, let keySetRaw = keySetBox.raw else {
+        return -1
+    }
+    return Int32(__AAArchiveStreamWritePathList(raw, pathListRaw, keySetRaw, dir, arg, typedProc, __AAFlagSet(flags), nThreads))
+}
+
+@_cdecl("compression_rs_aa_archive_stream_process_with_messages")
+public func compressionRsAAArchiveStreamProcessWithMessages(
+    _ input: UnsafeMutableRawPointer?,
+    _ output: UnsafeMutableRawPointer?,
+    _ flags: UInt64,
+    _ nThreads: Int32,
+    _ arg: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAEntryMessageProc?
+) -> Int64 {
+    guard let input, let output else { return -1 }
+    let inputBox: AAArchiveStreamBox = unretained(input, as: AAArchiveStreamBox.self)
+    let outputBox: AAArchiveStreamBox = unretained(output, as: AAArchiveStreamBox.self)
+    let typedProc = proc.map { unsafeBitCast($0, to: __AAEntryMessageProc.self) }
+    guard let inputRaw = inputBox.raw, let outputRaw = outputBox.raw else { return -1 }
+    return Int64(__AAArchiveStreamProcess(inputRaw, outputRaw, arg, typedProc, __AAFlagSet(flags), nThreads))
+}

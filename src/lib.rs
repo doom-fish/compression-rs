@@ -14,22 +14,32 @@ compile_error!("compression only supports macOS");
 
 mod aa_archive_stream;
 mod aa_byte_stream;
+mod aa_entry_blob;
 mod aa_entry_stream;
 mod aa_field_key;
 mod aa_header;
 mod compression_decode;
 mod compression_encode;
 mod compression_stream;
+mod aea;
 mod error;
 mod ffi;
 #[cfg(feature = "raw-ffi")]
 pub mod raw_ffi;
 pub(crate) mod util;
 
-pub use aa_archive_stream::ArchiveStream;
+pub use aa_archive_stream::{
+    ArchiveStream, CustomArchiveStreamCallbacks, EntryMessageData, EntryMessageEvent,
+    EntryMessageHandler,
+};
 pub use aa_byte_stream::{
-    ArchiveCompressionAlgorithm, ArchiveFlags, ByteStream, DEFAULT_FILE_MODE, OPEN_CREATE,
+    ArchiveCompressionAlgorithm, ArchiveFlags, ByteStream, CustomByteStreamCallbacks,
+    DEFAULT_FILE_MODE, OPEN_CREATE,
     OPEN_READ_ONLY, OPEN_READ_WRITE, OPEN_TRUNCATE, OPEN_WRITE_ONLY,
+};
+pub use aa_entry_blob::{
+    AccessControlEntry, AceFlagSet, AcePermSet, AceQualifierType, AceTag, EntryAclBlob,
+    EntryXatBlob, NamedBlobEntry,
 };
 pub use aa_entry_stream::{EntryAttributes, EntryMessage, PathList};
 pub use aa_field_key::{FieldKey, FieldKeySet};
@@ -44,6 +54,11 @@ pub use compression_encode::{
     compress, compression_encode_buffer, compression_encode_scratch_buffer_size,
 };
 pub use compression_stream::{CompressionStream, Decoder, Encoder, StreamOperation};
+pub use aea::{
+    AeaAuthData, AeaChecksumMode, AeaCiphersuite, AeaContext, AeaContextField,
+    AeaContextFieldRepresentation, AeaEncryptionMode, AeaPadding, AeaProfile,
+    AeaSignatureMode,
+};
 pub use error::{CompressionError, Result};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]

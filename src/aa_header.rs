@@ -100,6 +100,7 @@ impl FieldType {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Timespec {
     pub seconds: i64,
@@ -558,5 +559,23 @@ impl Clone for Header {
 impl Drop for Header {
     fn drop(&mut self) {
         unsafe { ffi::aa_header::compression_rs_aa_header_release(self.as_ptr()) };
+    }
+}
+
+impl Header {
+    pub(crate) fn from_raw_clone(raw: *mut c_void, operation: &'static str) -> Result<Self> {
+        let handle = unsafe { ffi::aa_header::compression_rs_aa_header_clone_from_raw(raw) };
+        Self::from_handle(handle, operation)
+    }
+
+    pub(crate) fn clone_raw(&self) -> Result<*mut c_void> {
+        let raw = unsafe { ffi::aa_header::compression_rs_aa_header_clone_raw(self.as_ptr()) };
+        if raw.is_null() {
+            Err(CompressionError::NullHandle {
+                operation: "AAHeaderClone",
+            })
+        } else {
+            Ok(raw)
+        }
     }
 }

@@ -306,3 +306,27 @@ public func compressionRsAAHeaderCopyEncodedData(
     memcpy(dst, src, size)
     return true
 }
+
+@_cdecl("compression_rs_aa_header_clone_from_raw")
+public func compressionRsAAHeaderCloneFromRaw(
+    _ rawHandle: UnsafeMutableRawPointer?
+) -> UnsafeMutableRawPointer? {
+    guard let rawHandle,
+          let clone = __AAHeaderClone(OpaquePointer(rawHandle))
+    else {
+        return nil
+    }
+    return retain(AAHeaderBox(raw: clone))
+}
+
+@_cdecl("compression_rs_aa_header_clone_raw")
+public func compressionRsAAHeaderCloneRaw(_ handle: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
+    guard let handle else { return nil }
+    let box: AAHeaderBox = unretained(handle, as: AAHeaderBox.self)
+    guard let raw = box.raw,
+          let clone = __AAHeaderClone(raw)
+    else {
+        return nil
+    }
+    return UnsafeMutableRawPointer(clone)
+}

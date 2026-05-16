@@ -1,11 +1,12 @@
 # Coverage
 
-`compression-rs` 0.2.0 follows the Swift-bridge pattern used in
+`compression-rs` 0.2.1 follows the Swift-bridge pattern used in
 `screencapturekit-rs`: Rust owns opaque pointers to Swift box objects, and the
 Swift layer owns the underlying C-only `Compression` / `AppleArchive` handles.
 
-This document tracks **requested logical-area coverage for v0.2.0**. It does
-**not** claim that every symbol in every AppleArchive header is wrapped.
+This document tracks **requested logical-area coverage for v0.2.1** and the
+additional AppleArchive / AEA surface added in this patch release. Full symbol
+coverage is tracked in `COVERAGE_AUDIT.md`.
 
 ## Requested logical areas
 
@@ -19,6 +20,9 @@ This document tracks **requested logical-area coverage for v0.2.0**. It does
 | `AAEntryStream` | no concrete SDK type exists; covered via `AAPathList`, `AAEntryMessage`, and `AAEntryAttributes` | `src/aa_entry_stream.rs` | `swift-bridge/Sources/CompressionBridge/AAEntryStream.swift` | `examples/06_aa_entry_stream_path_list.rs` | `tests/aa_entry_stream_tests.rs` | Complete for requested logical area |
 | `AAFieldKey` | `AAFieldKey`, `AAFieldKeySet` | `src/aa_field_key.rs` | `swift-bridge/Sources/CompressionBridge/AAFieldKey.swift` | `examples/07_aa_field_key_set.rs` | `tests/aa_field_key_tests.rs` | Complete |
 | `AAHeader` | `AAHeader` creation, cloning, assignment, getters, setters, encoded-data round-trip | `src/aa_header.rs` | `swift-bridge/Sources/CompressionBridge/AAHeader.swift` | `examples/08_aa_header_roundtrip.rs` | `tests/aa_header_tests.rs` | Complete |
+| `AAEntryACLBlob` / `AAEntryXATBlob` | ACL and extended-attribute blob helpers | `src/aa_entry_blob.rs` | `swift-bridge/Sources/CompressionBridge/AAEntryBlob.swift` | `examples/09_aa_entry_blobs.rs` | `tests/aa_entry_blob_tests.rs` | Complete |
+| `AEAContext` / `AEAStreams` | encrypted-archive contexts, auth data, and stream open/close helpers | `src/aea.rs` | `swift-bridge/Sources/CompressionBridge/AEA.swift` | `examples/10_aea_roundtrip.rs` | `tests/aea_tests.rs` | Complete |
+| `AACustomByteStream` / `AACustomArchiveStream` | custom callback streams plus archive message handlers | `src/aa_byte_stream.rs`, `src/aa_archive_stream.rs` | `swift-bridge/Sources/CompressionBridge/AAByteStream.swift`, `swift-bridge/Sources/CompressionBridge/AAArchiveStream.swift` | `examples/11_aa_custom_stream_callbacks.rs` | `tests/custom_stream_tests.rs` | Complete |
 
 ## Bridge and raw-FFI decisions
 
@@ -41,15 +45,9 @@ This document tracks **requested logical-area coverage for v0.2.0**. It does
 - `AAHeaderGetFieldHash` is handled by reading the maximum digest size and then
   truncating according to the returned hash function.
 
-## Deferred Apple SDK surface
+## Audit summary
 
-The following AppleArchive surface was audited but is still outside the v0.2.0
-requested scope:
-
-- custom stream callback APIs beyond the wrapped file/fd/shared-buffer flows
-- ACL and extended-attribute blob helper APIs
-- path-list helpers not needed for the requested entry-level coverage
-- AEA / encryption-related headers and helpers
-
-Those areas can be added later without changing the public bridge pattern used
-by this release.
+- `COVERAGE_AUDIT.md` now records 373 verified public symbols out of 377 audited
+  macOS 26.2 symbols.
+- The remaining four entries are deprecated compatibility shims that stay in the
+  exempt bucket per the audit rules.

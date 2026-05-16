@@ -23,6 +23,29 @@ pub enum EntryMessage {
     DecodeReading = 60,
 }
 
+impl EntryMessage {
+    pub(crate) const fn from_raw(raw: u32) -> Option<Self> {
+        match raw {
+            x if x == Self::SearchPruneDir as u32 => Some(Self::SearchPruneDir),
+            x if x == Self::SearchExclude as u32 => Some(Self::SearchExclude),
+            x if x == Self::SearchFail as u32 => Some(Self::SearchFail),
+            x if x == Self::ExtractBegin as u32 => Some(Self::ExtractBegin),
+            x if x == Self::ExtractEnd as u32 => Some(Self::ExtractEnd),
+            x if x == Self::ExtractFail as u32 => Some(Self::ExtractFail),
+            x if x == Self::ExtractAttributes as u32 => Some(Self::ExtractAttributes),
+            x if x == Self::ExtractXat as u32 => Some(Self::ExtractXat),
+            x if x == Self::ExtractAcl as u32 => Some(Self::ExtractAcl),
+            x if x == Self::EncodeScanning as u32 => Some(Self::EncodeScanning),
+            x if x == Self::EncodeWriting as u32 => Some(Self::EncodeWriting),
+            x if x == Self::ConvertExclude as u32 => Some(Self::ConvertExclude),
+            x if x == Self::ProcessExclude as u32 => Some(Self::ProcessExclude),
+            x if x == Self::DecodeReading as u32 => Some(Self::DecodeReading),
+            _ => None,
+        }
+    }
+}
+
+#[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct EntryAttributes {
     pub bits: u32,

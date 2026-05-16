@@ -233,3 +233,105 @@ public func compressionRsAARandomAccessByteStreamProcess(
 public func compressionRsAAByteStreamRelease(_ handle: UnsafeMutableRawPointer?) {
     release(handle, as: AAByteStreamBox.self)
 }
+
+public typealias CompressionRsAAByteStreamWriteProc = @convention(c) (UnsafeMutableRawPointer?, UnsafeRawPointer, Int) -> Int
+public typealias CompressionRsAAByteStreamPWriteProc = @convention(c) (UnsafeMutableRawPointer?, UnsafeRawPointer, Int, Int64) -> Int
+public typealias CompressionRsAAByteStreamReadProc = @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer, Int) -> Int
+public typealias CompressionRsAAByteStreamPReadProc = @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer, Int, Int64) -> Int
+public typealias CompressionRsAAByteStreamSeekProc = @convention(c) (UnsafeMutableRawPointer?, Int64, Int32) -> Int64
+public typealias CompressionRsAAByteStreamCancelProc = @convention(c) (UnsafeMutableRawPointer?) -> Void
+public typealias CompressionRsAAByteStreamCloseProc = @convention(c) (UnsafeMutableRawPointer?) -> Int32
+
+@_cdecl("compression_rs_aa_custom_byte_stream_open")
+public func compressionRsAACustomByteStreamOpen() -> UnsafeMutableRawPointer? {
+    guard let raw = __AACustomByteStreamOpen() else { return nil }
+    return retain(AAByteStreamBox(raw: raw))
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_data")
+public func compressionRsAACustomByteStreamSetData(
+    _ handle: UnsafeMutableRawPointer?,
+    _ data: UnsafeMutableRawPointer?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetData(raw, data)
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_write_proc")
+public func compressionRsAACustomByteStreamSetWriteProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAByteStreamWriteProc?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetWriteProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_pwrite_proc")
+public func compressionRsAACustomByteStreamSetPWriteProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAByteStreamPWriteProc?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetPWriteProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_read_proc")
+public func compressionRsAACustomByteStreamSetReadProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAByteStreamReadProc?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetReadProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_pread_proc")
+public func compressionRsAACustomByteStreamSetPReadProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAByteStreamPReadProc?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetPReadProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_seek_proc")
+public func compressionRsAACustomByteStreamSetSeekProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAByteStreamSeekProc?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetSeekProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_cancel_proc")
+public func compressionRsAACustomByteStreamSetCancelProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAByteStreamCancelProc?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetCancelProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_byte_stream_set_close_proc")
+public func compressionRsAACustomByteStreamSetCloseProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAByteStreamCloseProc?
+) {
+    guard let handle else { return }
+    let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
+    guard let raw = box.raw else { return }
+    __AACustomByteStreamSetCloseProc(raw, proc)
+}

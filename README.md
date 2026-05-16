@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple’s `Compression` and `AppleArchive` APIs on macOS.
 
-`compression-rs` 0.2.0 uses a Swift bridge in front of the C-only Apple SDK
+`compression-rs` 0.2.1 uses a Swift bridge in front of the C-only Apple SDK
 surfaces. The default API is safe Rust over opaque Swift-owned handles, while
 the original `compression.h` FFI remains available behind the `raw-ffi` feature.
 
@@ -30,12 +30,16 @@ compression-rs = { version = "0.2", features = ["raw-ffi"] }
 - `CompressionStream` via `CompressionStream`, `Encoder`, and `Decoder`
 - one-shot `CompressionEncode` / `CompressionDecode` helpers
 - `AAByteStream` file, fd, temp-file, shared-buffer, compression, and random-access APIs
-- `AAArchiveStream` encode, decode, extract, convert, header, and blob APIs
+- `AAArchiveStream` encode, decode, extract, convert, header, blob, and message-callback APIs
+- `AAEntryACLBlob` and `AAEntryXATBlob` helper APIs
+- custom `AACustomByteStream` and `AACustomArchiveStream` callback flows
+- `AEAContext`, `AEAAuthData`, and `AEAStreams` symmetric archive helpers
 - `AAFieldKey` / `AAFieldKeySet`
 - `AAHeader`
 - requested `AAEntryStream` coverage, mapped to `PathList`, `EntryMessage`, and `EntryAttributes`
 
-See [COVERAGE.md](COVERAGE.md) for the per-area SDK mapping and deferred surface.
+See [COVERAGE.md](COVERAGE.md) for the requested-area mapping and
+[COVERAGE_AUDIT.md](COVERAGE_AUDIT.md) for the full audited SDK surface.
 
 ## Quick start
 
@@ -71,6 +75,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 cargo run --example 01_roundtrip
 cargo run --example 04_aa_archive_stream_roundtrip
 cargo run --example 05_aa_byte_stream_pipeline
+cargo run --example 09_aa_entry_blobs
+cargo run --example 10_aea_roundtrip
+cargo run --example 11_aa_custom_stream_callbacks
 ```
 
 This release also includes examples and tests for all requested logical areas:
@@ -83,6 +90,9 @@ This release also includes examples and tests for all requested logical areas:
 - `06_aa_entry_stream_path_list`
 - `07_aa_field_key_set`
 - `08_aa_header_roundtrip`
+- `09_aa_entry_blobs`
+- `10_aea_roundtrip`
+- `11_aa_custom_stream_callbacks`
 
 ## License
 
