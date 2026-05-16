@@ -18,6 +18,7 @@ pub enum CompressionError {
     StreamProcessFailed {
         operation: &'static str,
         algorithm: Algorithm,
+        status: i32,
     },
     StreamStalled {
         operation: &'static str,
@@ -26,6 +27,29 @@ pub enum CompressionError {
     StreamFinished {
         operation: &'static str,
         algorithm: Algorithm,
+    },
+    OperationFailed {
+        operation: &'static str,
+        code: i32,
+    },
+    NullHandle {
+        operation: &'static str,
+    },
+    Closed {
+        resource: &'static str,
+    },
+    InvalidFieldKey {
+        key: String,
+    },
+    InvalidHashLength {
+        expected: usize,
+        actual: usize,
+    },
+    NulByte {
+        argument: &'static str,
+    },
+    Utf8Error {
+        operation: &'static str,
     },
 }
 
@@ -44,11 +68,15 @@ impl fmt::Display for CompressionError {
             Self::StreamInitFailed {
                 operation,
                 algorithm,
-            }
-            | Self::StreamProcessFailed {
+            } => write!(f, "{operation} failed for {algorithm:?}"),
+            Self::StreamProcessFailed {
                 operation,
                 algorithm,
-            } => write!(f, "{operation} failed for {algorithm:?}"),
+                status,
+            } => write!(
+                f,
+                "{operation} failed for {algorithm:?} (status={status})"
+            ),
             Self::StreamStalled {
                 operation,
                 algorithm,
@@ -60,6 +88,26 @@ impl fmt::Display for CompressionError {
                 operation,
                 algorithm,
             } => write!(f, "{operation} called after the {algorithm:?} stream already finished"),
+            Self::OperationFailed { operation, code } => {
+                if *code < 0 {
+                    let os_code = -*code;
+                    write!(
+                        f,
+                        "{operation} failed with {code} ({})",
+                        std::io::Error::from_raw_os_error(os_code)
+                    )
+                } else {
+                    write!(f, "{operation} failed with {code}")
+                }
+            }
+            Self::NullHandle { operation } => write!(f, "{operation} returned a null handle"),
+            Self::Closed { resource } => write!(f, "{resource} is already closed"),
+            Self::InvalidFieldKey { key } => write!(f, "invalid AppleArchive field key: {key:?}"),
+            Self::InvalidHashLength { expected, actual } => {
+                write!(f, "invalid hash length: expected {expected} bytes, got {actual}")
+            }
+            Self::NulByte { argument } => write!(f, "{argument} contains an interior NUL byte"),
+            Self::Utf8Error { operation } => write!(f, "{operation} returned data that is not valid UTF-8"),
         }
     }
 }

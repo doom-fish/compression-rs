@@ -1,13 +1,13 @@
 [package]
 name = "compression-rs"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/doom-fish/compression-rs"
 repository = "https://github.com/doom-fish/compression-rs"
-description = "Safe Rust bindings for Apple's libcompression APIs — LZ4, LZFSE, LZMA, zlib, and Brotli on macOS"
+description = "Safe Rust bindings for Apple's Compression and AppleArchive APIs on macOS"
 authors = ["Per Johansson <per@doom.fish>"]
-keywords = ["compression", "macos", "apple", "lzfse", "brotli"]
+keywords = ["compression", "applearchive", "macos", "lzfse", "brotli"]
 categories = ["compression", "api-bindings", "os::macos-apis"]
 rust-version = "1.76"
 readme = "README.md"
@@ -15,11 +15,14 @@ build = "build.rs"
 include = [
     "src/**/*",
     "examples/**/*",
+    "tests/**/*",
+    "swift-bridge/**/*",
     "build.rs",
     "Cargo.toml",
     "README.md",
     "LICENSE-*",
     "CHANGELOG.md",
+    "COVERAGE.md",
 ]
 
 [lints.rust]
@@ -35,6 +38,7 @@ crate-type = ["lib"]
 
 [features]
 default = []
+raw-ffi = []
 
 [dependencies]
 

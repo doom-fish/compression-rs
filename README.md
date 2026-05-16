@@ -1,25 +1,41 @@
 # compression-rs
 
-Safe Rust bindings for Apple's `libcompression` APIs on macOS.
+Safe Rust bindings for Apple’s `Compression` and `AppleArchive` APIs on macOS.
 
-`compression-rs` covers the core pieces you typically need first:
+`compression-rs` 0.2.0 uses a Swift bridge in front of the C-only Apple SDK
+surfaces. The default API is safe Rust over opaque Swift-owned handles, while
+the original `compression.h` FFI remains available behind the `raw-ffi` feature.
 
-- one-shot `compression_encode_buffer` / `compression_decode_buffer`
-- streaming `Encoder` / `Decoder` wrappers built on `compression_stream_*`
-- algorithms: `LZ4`, `LZFSE`, `LZMA`, `zlib`, and `Brotli`
-- ergonomic `compress` / `decompress` helpers that grow output buffers for you
+## Requirements
 
-## Status
-
-Initial `0.1.0` coverage focuses on the public `compression.h` surface that is
-useful for in-memory tools and streaming pipelines.
+- macOS
+- Xcode / Swift toolchain available on `PATH` (`build.rs` runs `swift build`)
 
 ## Installation
 
 ```toml
 [dependencies]
-compression-rs = "0.1"
+compression-rs = "0.2"
 ```
+
+Enable raw `compression.h` bindings when needed:
+
+```toml
+[dependencies]
+compression-rs = { version = "0.2", features = ["raw-ffi"] }
+```
+
+## Covered areas
+
+- `CompressionStream` via `CompressionStream`, `Encoder`, and `Decoder`
+- one-shot `CompressionEncode` / `CompressionDecode` helpers
+- `AAByteStream` file, fd, temp-file, shared-buffer, compression, and random-access APIs
+- `AAArchiveStream` encode, decode, extract, convert, header, and blob APIs
+- `AAFieldKey` / `AAFieldKeySet`
+- `AAHeader`
+- requested `AAEntryStream` coverage, mapped to `PathList`, `EntryMessage`, and `EntryAttributes`
+
+See [COVERAGE.md](COVERAGE.md) for the per-area SDK mapping and deferred surface.
 
 ## Quick start
 
@@ -36,33 +52,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Highlights
-
-- Direct wrappers for `compression_encode_buffer` and `compression_decode_buffer`
-- Safe `Encoder` / `Decoder` streaming types for chunked workloads
-- No Swift bridge required — this crate is pure Rust + C FFI
-- `examples/01_roundtrip.rs` smoke test for a 64 KiB LZFSE round-trip
-
 ## API notes
 
-- `compression_encode_buffer` and `compression_decode_buffer` expect the caller to
-  provide the destination buffer and return the number of bytes written.
-- `compress` and `decompress` build on the streaming APIs so they can resize
-  output buffers automatically.
-- `Algorithm::Brotli` requires a macOS version that ships Brotli support in
-  `libcompression`.
+- `Algorithm::ALL` contains the stream-capable algorithms.
+- `Algorithm::BUFFER_ALL` additionally includes buffer-only algorithms such as
+  `Lz4Raw` and `Lzbitmap`.
+- `compress` / `decompress` use stream APIs when available and automatically
+  fall back to repeated one-shot buffer calls for buffer-only algorithms.
+- `raw-ffi` currently preserves the direct `compression.h` surface. AppleArchive
+  stays behind the Swift bridge.
+- AppleArchive does not define a concrete `AAEntryStream` type; this crate uses
+  the entry-level `AAPathList`, `AAEntryMessage`, and `AAEntryAttributes` APIs
+  to cover that requested area.
 
-## Smoke example
+## Examples
 
 ```bash
 cargo run --example 01_roundtrip
+cargo run --example 04_aa_archive_stream_roundtrip
+cargo run --example 05_aa_byte_stream_pipeline
 ```
 
-Expected tail output:
+This release also includes examples and tests for all requested logical areas:
 
-```text
-✅ compression round-trip OK
-```
+- `01_roundtrip`
+- `02_compression_encode_one_shot`
+- `03_compression_decode_one_shot`
+- `04_aa_archive_stream_roundtrip`
+- `05_aa_byte_stream_pipeline`
+- `06_aa_entry_stream_path_list`
+- `07_aa_field_key_set`
+- `08_aa_header_roundtrip`
 
 ## License
 

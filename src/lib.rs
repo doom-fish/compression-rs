@@ -12,110 +12,76 @@
 #[cfg(not(target_os = "macos"))]
 compile_error!("compression only supports macOS");
 
+mod aa_archive_stream;
+mod aa_byte_stream;
+mod aa_entry_stream;
+mod aa_field_key;
+mod aa_header;
+mod compression_decode;
+mod compression_encode;
+mod compression_stream;
 mod error;
 mod ffi;
-mod stream;
+#[cfg(feature = "raw-ffi")]
+pub mod raw_ffi;
+pub(crate) mod util;
 
+pub use aa_archive_stream::ArchiveStream;
+pub use aa_byte_stream::{
+    ArchiveCompressionAlgorithm, ArchiveFlags, ByteStream, DEFAULT_FILE_MODE, OPEN_CREATE,
+    OPEN_READ_ONLY, OPEN_READ_WRITE, OPEN_TRUNCATE, OPEN_WRITE_ONLY,
+};
+pub use aa_entry_stream::{EntryAttributes, EntryMessage, PathList};
+pub use aa_field_key::{FieldKey, FieldKeySet};
+pub use aa_header::{
+    BlobDescription, EntryType, FieldType, HashFunction, HashValue, Header, HeaderFieldValue,
+    Timespec,
+};
+pub use compression_decode::{
+    compression_decode_buffer, compression_decode_scratch_buffer_size, decompress,
+};
+pub use compression_encode::{
+    compress, compression_encode_buffer, compression_encode_scratch_buffer_size,
+};
+pub use compression_stream::{CompressionStream, Decoder, Encoder, StreamOperation};
 pub use error::{CompressionError, Result};
-pub use stream::{Decoder, Encoder};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Algorithm {
     Lz4,
     Zlib,
     Lzma,
+    Lz4Raw,
     Brotli,
     Lzfse,
+    Lzbitmap,
 }
 
 impl Algorithm {
     pub const ALL: [Self; 5] = [Self::Lz4, Self::Zlib, Self::Lzma, Self::Brotli, Self::Lzfse];
+    pub const BUFFER_ALL: [Self; 7] = [
+        Self::Lz4,
+        Self::Zlib,
+        Self::Lzma,
+        Self::Lz4Raw,
+        Self::Brotli,
+        Self::Lzfse,
+        Self::Lzbitmap,
+    ];
 
-    fn as_ffi(self) -> ffi::compression_algorithm {
+    pub const fn supports_streams(self) -> bool {
+        !matches!(self, Self::Lz4Raw | Self::Lzbitmap)
+    }
+
+    pub(crate) const fn as_raw(self) -> u32 {
         match self {
-            Self::Lz4 => ffi::COMPRESSION_LZ4,
-            Self::Zlib => ffi::COMPRESSION_ZLIB,
-            Self::Lzma => ffi::COMPRESSION_LZMA,
-            Self::Brotli => ffi::COMPRESSION_BROTLI,
-            Self::Lzfse => ffi::COMPRESSION_LZFSE,
+            Self::Lz4 => 0x100,
+            Self::Zlib => 0x205,
+            Self::Lzma => 0x306,
+            Self::Lz4Raw => 0x101,
+            Self::Brotli => 0xB02,
+            Self::Lzfse => 0x801,
+            Self::Lzbitmap => 0x702,
         }
     }
-}
-
-pub fn compression_encode_scratch_buffer_size(algorithm: Algorithm) -> usize {
-    unsafe { ffi::compression_encode_scratch_buffer_size(algorithm.as_ffi()) }
-}
-
-pub fn compression_decode_scratch_buffer_size(algorithm: Algorithm) -> usize {
-    unsafe { ffi::compression_decode_scratch_buffer_size(algorithm.as_ffi()) }
-}
-
-pub fn compression_encode_buffer(
-    dst: &mut [u8],
-    src: &[u8],
-    algorithm: Algorithm,
-) -> Result<usize> {
-    let written = unsafe {
-        ffi::compression_encode_buffer(
-            dst.as_mut_ptr(),
-            dst.len(),
-            src.as_ptr(),
-            src.len(),
-            std::ptr::null_mut(),
-            algorithm.as_ffi(),
-        )
-    };
-
-    if src.is_empty() || written > 0 {
-        Ok(written)
-    } else {
-        Err(CompressionError::BufferOperationFailed {
-            operation: "compression_encode_buffer",
-            algorithm,
-            input_len: src.len(),
-            output_capacity: dst.len(),
-        })
-    }
-}
-
-pub fn compression_decode_buffer(
-    dst: &mut [u8],
-    src: &[u8],
-    algorithm: Algorithm,
-) -> Result<usize> {
-    let written = unsafe {
-        ffi::compression_decode_buffer(
-            dst.as_mut_ptr(),
-            dst.len(),
-            src.as_ptr(),
-            src.len(),
-            std::ptr::null_mut(),
-            algorithm.as_ffi(),
-        )
-    };
-
-    if src.is_empty() || written > 0 {
-        Ok(written)
-    } else {
-        Err(CompressionError::BufferOperationFailed {
-            operation: "compression_decode_buffer",
-            algorithm,
-            input_len: src.len(),
-            output_capacity: dst.len(),
-        })
-    }
-}
-
-pub fn compress(input: &[u8], algorithm: Algorithm) -> Result<Vec<u8>> {
-    let mut encoder = Encoder::new(algorithm)?;
-    let mut output = encoder.process(input)?;
-    output.extend(encoder.finish()?);
-    Ok(output)
-}
-
-pub fn decompress(input: &[u8], algorithm: Algorithm) -> Result<Vec<u8>> {
-    let mut decoder = Decoder::new(algorithm)?;
-    let mut output = decoder.process(input)?;
-    output.extend(decoder.finish()?);
-    Ok(output)
 }

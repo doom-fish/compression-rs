@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.2.0] - 2026-05-16
+
+### Added
+
+- Swift bridge package and `build.rs` integration for the C-only `Compression`
+  and `AppleArchive` SDK APIs.
+- Safe Rust modules for `CompressionStream`, `CompressionEncode`,
+  `CompressionDecode`, `AAArchiveStream`, `AAByteStream`, `AAEntryStream`
+  coverage, `AAFieldKey`, and `AAHeader`.
+- One example and one integration test for each requested logical area.
+- AppleArchive-safe wrappers for archive streams, byte streams, field-key sets,
+  path lists, headers, flags, and random-access processing.
+- `raw-ffi` feature exposing direct `compression.h` bindings through
+  `compression::raw_ffi`.
+- `Algorithm` support for `Lz4Raw` and `Lzbitmap`, plus `Algorithm::BUFFER_ALL`
+  and `Algorithm::supports_streams()`.
+- `COVERAGE.md` documenting the requested-area mapping and deferred SDK surface.
+
+### Changed
+
+- The default API now routes through opaque Swift-owned bridge handles instead
+  of direct Rust ownership of C handles.
+- `compress` / `decompress` now use stream processing when available and grow
+  one-shot buffers for buffer-only algorithms.
+- `CompressionStream::finish()` is now idempotent after end-of-stream.
+
+### Fixed
+
+- Swift compatibility library search/rpath handling during `cargo test` and
+  example builds.
+- Header hash decoding for `AAHeaderGetFieldHash`.
+
 ## [0.1.0] - 2026-05-16
 
 ### Added
