@@ -1,0 +1,55 @@
+[package]
+name = "compression-rs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/doom-fish/compression-rs"
+repository = "https://github.com/doom-fish/compression-rs"
+description = "Safe Rust bindings for Apple's libcompression APIs — LZ4, LZFSE, LZMA, zlib, and Brotli on macOS"
+authors = ["Per Johansson <per@doom.fish>"]
+keywords = ["compression", "macos", "apple", "lzfse", "brotli"]
+categories = ["compression", "api-bindings", "os::macos-apis"]
+rust-version = "1.76"
+readme = "README.md"
+build = "build.rs"
+include = [
+    "src/**/*",
+    "examples/**/*",
+    "build.rs",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-*",
+    "CHANGELOG.md",
+]
+
+[lints.rust]
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+
+[lib]
+name = "compression"
+crate-type = ["lib"]
+
+[features]
+default = []
+
+[dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
+default-target = "aarch64-apple-darwin"
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[[example]]
+name = "01_roundtrip"
+
+[profile.release]
+debug = "full"
+strip = "none"
