@@ -177,7 +177,7 @@ fn custom_byte_stream_supports_callbacks() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
-#[allow(deprecated)]
+#[allow(deprecated, clippy::too_many_lines)]
 fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"custom archive payload".to_vec();
     let mut header = Header::new()?;
