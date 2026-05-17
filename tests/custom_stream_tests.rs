@@ -106,7 +106,10 @@ struct SharedMemoryArchiveStream {
 
 impl CustomArchiveStreamCallbacks for SharedMemoryArchiveStream {
     fn write_header(&mut self, header: &Header) -> compression::Result<()> {
-        self.inner.borrow_mut().written_headers.push(header.encoded_data()?);
+        self.inner
+            .borrow_mut()
+            .written_headers
+            .push(header.encoded_data()?);
         Ok(())
     }
 
@@ -148,6 +151,7 @@ impl CustomArchiveStreamCallbacks for SharedMemoryArchiveStream {
 }
 
 #[test]
+#[allow(deprecated)]
 fn custom_byte_stream_supports_callbacks() -> Result<(), Box<dyn std::error::Error>> {
     let state = Rc::new(RefCell::new(MemoryByteState::default()));
     let mut stream = ByteStream::custom(SharedMemoryByteStream {
@@ -162,7 +166,7 @@ fn custom_byte_stream_supports_callbacks() -> Result<(), Box<dyn std::error::Err
     let mut slice = vec![0_u8; 5];
     assert_eq!(stream.pread(&mut slice, 6)?, 5);
     assert_eq!(&slice, b"world");
-    stream.cancel()?;
+    stream.abort()?;
     stream.close()?;
 
     let state = state.borrow();
@@ -173,6 +177,7 @@ fn custom_byte_stream_supports_callbacks() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
+#[allow(deprecated)]
 fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std::error::Error>> {
     let payload = b"custom archive payload".to_vec();
     let mut header = Header::new()?;
@@ -208,7 +213,7 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     reader.read_blob(FieldKey::DAT, &mut decoded_blob)?;
     assert_eq!(decoded_blob, payload);
     assert!(reader.read_header()?.is_none());
-    reader.cancel()?;
+    reader.abort()?;
     reader.close()?;
     assert!(reader_state.borrow().cancelled);
     assert!(reader_state.borrow().closed);
@@ -219,7 +224,8 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     let source_dir_string = path_string(&source_dir);
     fs::write(source_dir.join("hello.txt"), b"archive callback")?;
     let archive_path = path_string(&artifact_dir.join("payload.aar"));
-    let path_list = PathList::from_directory_contents(&source_dir_string, None, ArchiveFlags::empty(), 0)?;
+    let path_list =
+        PathList::from_directory_contents(&source_dir_string, None, ArchiveFlags::empty(), 0)?;
     let key_set = FieldKeySet::from_csv("TYP,PAT,SIZ,DAT")?;
     let stream = ByteStream::open_with_path(
         &archive_path,
@@ -244,7 +250,10 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     )?;
     archive.close()?;
     assert!(write_events.borrow().iter().any(|(message, _)| {
-        matches!(message, EntryMessage::EncodeScanning | EntryMessage::EncodeWriting)
+        matches!(
+            message,
+            EntryMessage::EncodeScanning | EntryMessage::EncodeWriting
+        )
     }));
 
     let stream = ByteStream::open_with_path(&archive_path, OPEN_READ_ONLY, 0)?;

@@ -235,6 +235,16 @@ impl ArchiveStream {
         Ok(())
     }
 
+    #[deprecated(
+        since = "0.2.2",
+        note = "Use ArchiveStream::cancel; AAArchiveStreamAbort is a deprecated AppleArchive compatibility shim."
+    )]
+    pub fn abort(&mut self) -> Result<()> {
+        self.ensure_open()?;
+        unsafe { ffi::aa_archive_stream::compression_rs_aa_archive_stream_abort(self.as_ptr()) };
+        Ok(())
+    }
+
     pub fn close(&mut self) -> Result<()> {
         if self.closed {
             return Ok(());
@@ -430,9 +440,8 @@ unsafe extern "C" fn custom_archive_stream_close(arg: *mut c_void) -> i32 {
 
 impl ArchiveStream {
     pub fn custom<T: CustomArchiveStreamCallbacks + 'static>(callbacks: T) -> Result<Self> {
-        let handle = unsafe {
-            ffi::aa_archive_stream::compression_rs_aa_custom_archive_stream_open()
-        };
+        let handle =
+            unsafe { ffi::aa_archive_stream::compression_rs_aa_custom_archive_stream_open() };
         let stream = Self {
             handle: util::nonnull_handle(handle, "AACustomArchiveStreamOpen")?,
             _upstream: None,
@@ -465,6 +474,10 @@ impl ArchiveStream {
                 Some(custom_archive_stream_read_blob),
             );
             ffi::aa_archive_stream::compression_rs_aa_custom_archive_stream_set_cancel_proc(
+                stream.as_ptr(),
+                Some(custom_archive_stream_cancel),
+            );
+            ffi::aa_archive_stream::compression_rs_aa_custom_archive_stream_set_abort_proc(
                 stream.as_ptr(),
                 Some(custom_archive_stream_cancel),
             );

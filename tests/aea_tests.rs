@@ -18,8 +18,14 @@ fn aea_round_trips_and_exposes_context_helpers() -> Result<(), Box<dyn std::erro
     let combined = [payload.clone(), extra.clone()].concat();
 
     let mut context = AeaContext::with_profile(AeaProfile::HkdfSha256AesctrHmacSymmetricNone)?;
-    assert_eq!(context.profile()?, AeaProfile::HkdfSha256AesctrHmacSymmetricNone);
-    assert_eq!(context.profile()?.encryption_mode(), AeaEncryptionMode::Symmetric);
+    assert_eq!(
+        context.profile()?,
+        AeaProfile::HkdfSha256AesctrHmacSymmetricNone
+    );
+    assert_eq!(
+        context.profile()?.encryption_mode(),
+        AeaEncryptionMode::Symmetric
+    );
     assert_eq!(context.profile()?.signature_mode(), AeaSignatureMode::None);
     context.set_checksum_mode(AeaChecksumMode::Sha256)?;
     context.set_padding_size(AeaPadding::NONE)?;
@@ -73,14 +79,19 @@ fn aea_round_trips_and_exposes_context_helpers() -> Result<(), Box<dyn std::erro
     assert!(context.container_size()? > 0);
     assert!(!context.archive_identifier()?.is_empty());
 
-    let symmetric_key =
-        context.field_blob(AeaContextField::SymmetricKey, AeaContextFieldRepresentation::Raw)?;
+    let symmetric_key = context.field_blob(
+        AeaContextField::SymmetricKey,
+        AeaContextFieldRepresentation::Raw,
+    )?;
 
     let mut append_source = ByteStream::open_with_path(&archive_path, OPEN_READ_WRITE, 0)?;
     let mut append_context = AeaContext::from_encrypted_stream(&mut append_source)?;
     append_context.set_symmetric_key(&symmetric_key)?;
-    let mut append_output =
-        append_context.encryption_output_stream_existing(append_source, ArchiveFlags::empty(), 0)?;
+    let mut append_output = append_context.encryption_output_stream_existing(
+        append_source,
+        ArchiveFlags::empty(),
+        0,
+    )?;
     append_output.write_all(&extra)?;
     append_context.close_encryption_output_stream(&mut append_output)?;
     assert_eq!(append_context.raw_size()?, combined.len() as u64);
@@ -120,14 +131,14 @@ fn aea_round_trips_and_exposes_context_helpers() -> Result<(), Box<dyn std::erro
     let _ = AeaContext::set_password as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
     let _ =
         AeaContext::set_signing_public_key as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
-    let _ =
-        AeaContext::set_signing_private_key as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
+    let _ = AeaContext::set_signing_private_key
+        as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
     let _ = AeaContext::set_recipient_public_key
         as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
     let _ = AeaContext::set_recipient_private_key
         as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
-    let _ =
-        AeaContext::set_signature_encryption_key as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
+    let _ = AeaContext::set_signature_encryption_key
+        as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
     let _ = AeaContext::sign_stream as fn(&AeaContext, &mut ByteStream) -> compression::Result<()>;
 
     Ok(())

@@ -151,6 +151,11 @@ public func compressionRsAAArchiveStreamCancel(_ handle: UnsafeMutableRawPointer
     __AAArchiveStreamCancel(raw)
 }
 
+@_cdecl("compression_rs_aa_archive_stream_abort")
+public func compressionRsAAArchiveStreamAbort(_ handle: UnsafeMutableRawPointer?) {
+    compressionRsAAArchiveStreamCancel(handle)
+}
+
 @_cdecl("compression_rs_aa_archive_stream_close")
 public func compressionRsAAArchiveStreamClose(_ handle: UnsafeMutableRawPointer?) -> Int32 {
     guard let handle else { return 0 }
@@ -277,6 +282,14 @@ public func compressionRsAACustomArchiveStreamSetCancelProc(
     let box: AAArchiveStreamBox = unretained(handle, as: AAArchiveStreamBox.self)
     guard let raw = box.raw else { return }
     __AACustomArchiveStreamSetCancelProc(raw, proc)
+}
+
+@_cdecl("compression_rs_aa_custom_archive_stream_set_abort_proc")
+public func compressionRsAACustomArchiveStreamSetAbortProc(
+    _ handle: UnsafeMutableRawPointer?,
+    _ proc: CompressionRsAAArchiveStreamCancelProc?
+) {
+    compressionRsAACustomArchiveStreamSetCancelProc(handle, proc)
 }
 
 @_cdecl("compression_rs_aa_custom_archive_stream_set_close_proc")

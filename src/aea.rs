@@ -203,7 +203,8 @@ impl AeaContext {
     }
 
     pub fn with_profile(profile: AeaProfile) -> Result<Self> {
-        let handle = unsafe { ffi::aea::compression_rs_aea_context_create_with_profile(profile.raw()) };
+        let handle =
+            unsafe { ffi::aea::compression_rs_aea_context_create_with_profile(profile.raw()) };
         Self::from_handle(handle, "AEAContextCreateWithProfile")
     }
 
@@ -282,7 +283,11 @@ impl AeaContext {
         representation: AeaContextFieldRepresentation,
         value: &[u8],
     ) -> Result<()> {
-        let value_ptr = if value.is_empty() { null() } else { value.as_ptr() };
+        let value_ptr = if value.is_empty() {
+            null()
+        } else {
+            value.as_ptr()
+        };
         let status = unsafe {
             ffi::aea::compression_rs_aea_context_set_field_blob(
                 self.as_ptr(),
@@ -303,7 +308,8 @@ impl AeaContext {
     }
 
     pub fn decrypt_attributes(&mut self) -> Result<()> {
-        let status = unsafe { ffi::aea::compression_rs_aea_context_decrypt_attributes(self.as_ptr()) };
+        let status =
+            unsafe { ffi::aea::compression_rs_aea_context_decrypt_attributes(self.as_ptr()) };
         util::status_result("AEAContextDecryptAttributes", status)
     }
 
@@ -316,7 +322,8 @@ impl AeaContext {
     }
 
     pub fn checksum_mode(&self) -> Result<AeaChecksumMode> {
-        let raw = u32::try_from(self.field_uint(AeaContextField::ChecksumMode)?).unwrap_or(u32::MAX);
+        let raw =
+            u32::try_from(self.field_uint(AeaContextField::ChecksumMode)?).unwrap_or(u32::MAX);
         AeaChecksumMode::from_raw(raw).ok_or_else(|| CompressionError::OperationFailed {
             operation: "AEAContextGetChecksumMode",
             code: i32::try_from(raw).unwrap_or(i32::MAX),
@@ -326,9 +333,11 @@ impl AeaContext {
     pub fn compression_algorithm(&self) -> Result<ArchiveCompressionAlgorithm> {
         let raw = u32::try_from(self.field_uint(AeaContextField::CompressionAlgorithm)?)
             .unwrap_or(u32::MAX);
-        ArchiveCompressionAlgorithm::from_raw(raw).ok_or_else(|| CompressionError::OperationFailed {
-            operation: "AEAContextGetCompressionAlgorithm",
-            code: i32::try_from(raw).unwrap_or(i32::MAX),
+        ArchiveCompressionAlgorithm::from_raw(raw).ok_or_else(|| {
+            CompressionError::OperationFailed {
+                operation: "AEAContextGetCompressionAlgorithm",
+                code: i32::try_from(raw).unwrap_or(i32::MAX),
+            }
         })
     }
 
@@ -350,7 +359,10 @@ impl AeaContext {
     }
 
     pub fn auth_data(&self) -> Result<Vec<u8>> {
-        self.field_blob(AeaContextField::AuthData, AeaContextFieldRepresentation::Raw)
+        self.field_blob(
+            AeaContextField::AuthData,
+            AeaContextFieldRepresentation::Raw,
+        )
     }
 
     pub fn signature_encryption_key(&self) -> Result<Vec<u8>> {
@@ -389,7 +401,10 @@ impl AeaContext {
     }
 
     pub fn set_checksum_mode(&mut self, checksum_mode: AeaChecksumMode) -> Result<()> {
-        self.set_field_uint(AeaContextField::ChecksumMode, u64::from(checksum_mode.raw()))
+        self.set_field_uint(
+            AeaContextField::ChecksumMode,
+            u64::from(checksum_mode.raw()),
+        )
     }
 
     pub fn set_padding_size(&mut self, padding_size: u64) -> Result<()> {
@@ -563,9 +578,8 @@ impl AeaContext {
     }
 
     pub fn sign_stream(&self, stream: &mut ByteStream) -> Result<()> {
-        let status = unsafe {
-            ffi::aea::compression_rs_aea_stream_sign(stream.as_ptr(), self.as_ptr())
-        };
+        let status =
+            unsafe { ffi::aea::compression_rs_aea_stream_sign(stream.as_ptr(), self.as_ptr()) };
         util::status_result("AEAStreamSign", status)
     }
 }
@@ -594,9 +608,8 @@ impl AeaAuthData {
     }
 
     pub fn from_context(context: &AeaContext) -> Result<Self> {
-        let handle = unsafe {
-            ffi::aea::compression_rs_aea_auth_data_create_with_context(context.as_ptr())
-        };
+        let handle =
+            unsafe { ffi::aea::compression_rs_aea_auth_data_create_with_context(context.as_ptr()) };
         Self::from_handle(handle, "AEAAuthDataCreateWithContext")
     }
 
@@ -660,7 +673,9 @@ impl AeaAuthData {
     }
 
     pub fn entries(&self) -> Result<Vec<NamedBlobEntry>> {
-        (0..self.entry_count()).map(|index| self.entry(index)).collect()
+        (0..self.entry_count())
+            .map(|index| self.entry(index))
+            .collect()
     }
 
     pub fn append_entry(&mut self, entry: &NamedBlobEntry) -> Result<()> {
@@ -706,9 +721,8 @@ impl AeaAuthData {
     }
 
     pub fn remove_entry(&mut self, index: u32) -> Result<()> {
-        let status = unsafe {
-            ffi::aea::compression_rs_aea_auth_data_remove_entry(self.as_ptr(), index)
-        };
+        let status =
+            unsafe { ffi::aea::compression_rs_aea_auth_data_remove_entry(self.as_ptr(), index) };
         util::status_result("AEAAuthDataRemoveEntry", status)
     }
 

@@ -1,17 +1,16 @@
-# compression-rs coverage audit (vs MacOSX26.2.sdk)
+# compression-rs coverage audit v2 (vs MacOSX26.2.sdk)
 
 SDK_PUBLIC_SYMBOLS: 377
-VERIFIED: 377
+VERIFIED: 373
 GAPS: 0
-EXEMPT: 0
-COVERAGE_PCT: 100.0%
+EXEMPT: 4
+COVERAGE_PCT: 100.0
 
-Counted public typedefs, enum/object-style constants, and top-level/inline C functions from `compression.h` plus `AppleArchive/*.h`; macOS-unavailable entries were filtered out. The four deprecated `AppleArchive.h` compatibility shims are wrapped as deprecated Rust aliases or compatibility registrations and count as verified.
+Comprehensive audit of Compression.h and AppleArchive/*.h headers against MacOSX26.2.sdk. The crate provides complete safe Rust bindings through both direct function wrappers and higher-level type abstractions (e.g., Algorithm enum, CompressionStream struct, ArchiveStream struct). All public macOS symbols are either verified (wrapped) or exempted (deprecated since 11.0 with modern replacements available).
 
 ## 🟢 VERIFIED
 | Symbol | Kind | Header | Wrapped by |
 | --- | --- | --- | --- |
-| AAArchiveStreamAbort | function | AppleArchive.h | ArchiveStream::abort (deprecated compatibility alias) |
 | AAArchiveStreamCancel | function | AAArchiveStream.h | ArchiveStream |
 | AAArchiveStreamClose | function | AAArchiveStream.h | ArchiveStream |
 | AAArchiveStreamProcess | function | AAArchiveStream.h | ArchiveStream |
@@ -24,7 +23,6 @@ Counted public typedefs, enum/object-style constants, and top-level/inline C fun
 | AADecodeArchiveInputStreamOpen | function | AAArchiveStream.h | ArchiveStream |
 | AAEncodeArchiveOutputStreamOpen | function | AAArchiveStream.h | ArchiveStream |
 | AAExtractArchiveOutputStreamOpen | function | AAArchiveStream.h | ArchiveStream |
-| AAByteStreamAbort | function | AppleArchive.h | ByteStream::abort (deprecated compatibility alias) |
 | AAByteStreamCancel | function | AAByteStream.h | ByteStream |
 | AAByteStreamClose | function | AAByteStream.h | ByteStream |
 | AAByteStreamPRead | function | AAByteStream.h | ByteStream |
@@ -229,7 +227,6 @@ Counted public typedefs, enum/object-style constants, and top-level/inline C fun
 | AAArchiveStreamReadHeaderProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
 | AAArchiveStreamWriteBlobProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
 | AAArchiveStreamWriteHeaderProc | callback type | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
-| AACustomArchiveStreamSetAbortProc | function | AppleArchive.h | ArchiveStream::custom / CustomArchiveStreamCallbacks (deprecated compatibility alias) |
 | AACustomArchiveStreamSetCancelProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
 | AACustomArchiveStreamSetCloseProc | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
 | AACustomArchiveStreamSetData | function | AACustomArchiveStream.h | ArchiveStream::custom / CustomArchiveStreamCallbacks |
@@ -244,7 +241,6 @@ Counted public typedefs, enum/object-style constants, and top-level/inline C fun
 | AAByteStreamReadProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
 | AAByteStreamSeekProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
 | AAByteStreamWriteProc | callback type | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
-| AACustomByteStreamSetAbortProc | function | AppleArchive.h | ByteStream::custom / CustomByteStreamCallbacks (deprecated compatibility alias) |
 | AACustomByteStreamSetCancelProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
 | AACustomByteStreamSetCloseProc | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
 | AACustomByteStreamSetData | function | AACustomByteStream.h | ByteStream::custom / CustomByteStreamCallbacks |
@@ -389,10 +385,14 @@ Counted public typedefs, enum/object-style constants, and top-level/inline C fun
 | AEAEncryptionOutputStreamOpenExisting | function | AEAStreams.h | AeaContext / ByteStream |
 | AEAStreamSign | function | AEAStreams.h | AeaContext / ByteStream |
 
-## ✅ NO GAPS
-
-No remaining gaps in the audited macOS 26.2 public surface.
+## 🔴 GAPS
+| Symbol | Kind | Header | Notes |
+| --- | --- | --- | --- |
 
 ## ⏭️ EXEMPT
-
-No exempt symbols remain in the audited macOS 26.2 public surface.
+| Symbol | Kind | Header | Reason | SDK attribute |
+| --- | --- | --- | --- | --- |
+| AAArchiveStreamAbort | function | AppleArchive.h | Deprecated compatibility alias, marked for removal in macOS 11.0+ | `__attribute__((availability(macos,deprecated=11.0, replacement="AAArchiveStreamCancel")))` |
+| AAByteStreamAbort | function | AppleArchive.h | Deprecated compatibility alias, marked for removal in macOS 11.0+ | `__attribute__((availability(macos,deprecated=11.0, replacement="AAByteStreamCancel")))` |
+| AACustomArchiveStreamSetAbortProc | function | AppleArchive.h | Deprecated compatibility alias, marked for removal in macOS 11.0+ | `__attribute__((availability(macos,deprecated=11.0, replacement="AACustomArchiveStreamSetCancelProc")))` |
+| AACustomByteStreamSetAbortProc | function | AppleArchive.h | Deprecated compatibility alias, marked for removal in macOS 11.0+ | `__attribute__((availability(macos,deprecated=11.0, replacement="AACustomByteStreamSetCancelProc")))` |

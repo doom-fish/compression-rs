@@ -1,6 +1,8 @@
 mod support;
 
-use compression::{AceQualifierType, AccessControlEntry, ArchiveFlags, EntryAclBlob, EntryXatBlob, NamedBlobEntry};
+use compression::{
+    AccessControlEntry, AceQualifierType, ArchiveFlags, EntryAclBlob, EntryXatBlob, NamedBlobEntry,
+};
 use std::env;
 use std::fs;
 use std::process::Command;
@@ -26,7 +28,15 @@ fn entry_acl_and_xat_blobs_round_trip() -> Result<(), Box<dyn std::error::Error>
     fs::write(&target_acl_path, b"acl target")?;
     fs::write(&target_xat_path, b"xat target")?;
 
-    run_command("xattr", &["-w", "com.example.compression-rs", "blob-data", &source_path])?;
+    run_command(
+        "xattr",
+        &[
+            "-w",
+            "com.example.compression-rs",
+            "blob-data",
+            &source_path,
+        ],
+    )?;
 
     let current_user = env::var("USER")?;
     let acl_entry = AccessControlEntry {

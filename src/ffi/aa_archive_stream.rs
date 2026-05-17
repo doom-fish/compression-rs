@@ -48,6 +48,7 @@ unsafe extern "C" {
         length: usize,
     ) -> i32;
     pub fn compression_rs_aa_archive_stream_cancel(handle: *mut c_void);
+    pub fn compression_rs_aa_archive_stream_abort(handle: *mut c_void);
     pub fn compression_rs_aa_archive_stream_close(handle: *mut c_void) -> i32;
     pub fn compression_rs_aa_archive_stream_write_path_list(
         handle: *mut c_void,
@@ -66,35 +67,21 @@ unsafe extern "C" {
     pub fn compression_rs_aa_archive_stream_release(handle: *mut c_void);
 }
 
-pub type CustomArchiveStreamWriteHeaderProc = unsafe extern "C" fn(
-    arg: *mut c_void,
-    header: *mut c_void,
-) -> i32;
-pub type CustomArchiveStreamWriteBlobProc = unsafe extern "C" fn(
-    arg: *mut c_void,
-    key: u32,
-    buffer: *const c_void,
-    length: usize,
-) -> i32;
-pub type CustomArchiveStreamReadHeaderProc = unsafe extern "C" fn(
-    arg: *mut c_void,
-    header: *mut *mut c_void,
-) -> i32;
-pub type CustomArchiveStreamReadBlobProc = unsafe extern "C" fn(
-    arg: *mut c_void,
-    key: u32,
-    buffer: *mut c_void,
-    length: usize,
-) -> i32;
+pub type CustomArchiveStreamWriteHeaderProc =
+    unsafe extern "C" fn(arg: *mut c_void, header: *mut c_void) -> i32;
+pub type CustomArchiveStreamWriteBlobProc =
+    unsafe extern "C" fn(arg: *mut c_void, key: u32, buffer: *const c_void, length: usize) -> i32;
+pub type CustomArchiveStreamReadHeaderProc =
+    unsafe extern "C" fn(arg: *mut c_void, header: *mut *mut c_void) -> i32;
+pub type CustomArchiveStreamReadBlobProc =
+    unsafe extern "C" fn(arg: *mut c_void, key: u32, buffer: *mut c_void, length: usize) -> i32;
 pub type CustomArchiveStreamCancelProc = unsafe extern "C" fn(arg: *mut c_void);
+pub type CustomArchiveStreamAbortProc = unsafe extern "C" fn(arg: *mut c_void);
 pub type CustomArchiveStreamCloseProc = unsafe extern "C" fn(arg: *mut c_void) -> i32;
 
 unsafe extern "C" {
     pub fn compression_rs_aa_custom_archive_stream_open() -> *mut c_void;
-    pub fn compression_rs_aa_custom_archive_stream_set_data(
-        handle: *mut c_void,
-        data: *mut c_void,
-    );
+    pub fn compression_rs_aa_custom_archive_stream_set_data(handle: *mut c_void, data: *mut c_void);
     pub fn compression_rs_aa_custom_archive_stream_set_write_header_proc(
         handle: *mut c_void,
         proc: Option<CustomArchiveStreamWriteHeaderProc>,
@@ -114,6 +101,10 @@ unsafe extern "C" {
     pub fn compression_rs_aa_custom_archive_stream_set_cancel_proc(
         handle: *mut c_void,
         proc: Option<CustomArchiveStreamCancelProc>,
+    );
+    pub fn compression_rs_aa_custom_archive_stream_set_abort_proc(
+        handle: *mut c_void,
+        proc: Option<CustomArchiveStreamAbortProc>,
     );
     pub fn compression_rs_aa_custom_archive_stream_set_close_proc(
         handle: *mut c_void,

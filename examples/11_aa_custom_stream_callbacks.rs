@@ -66,12 +66,18 @@ struct SharedArchiveCallbacks {
 
 impl CustomArchiveStreamCallbacks for SharedArchiveCallbacks {
     fn write_header(&mut self, header: &Header) -> compression::Result<()> {
-        self.inner.borrow_mut().headers.push_back(header.encoded_data()?);
+        self.inner
+            .borrow_mut()
+            .headers
+            .push_back(header.encoded_data()?);
         Ok(())
     }
 
     fn write_blob(&mut self, key: FieldKey, buffer: &[u8]) -> compression::Result<()> {
-        self.inner.borrow_mut().blobs.push_back((key, buffer.to_vec()));
+        self.inner
+            .borrow_mut()
+            .blobs
+            .push_back((key, buffer.to_vec()));
         Ok(())
     }
 
@@ -92,9 +98,7 @@ impl CustomArchiveStreamCallbacks for SharedArchiveCallbacks {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let byte_state = Rc::new(RefCell::new(MemoryByteState::default()));
-    let mut stream = ByteStream::custom(SharedByteCallbacks {
-        inner: byte_state,
-    })?;
+    let mut stream = ByteStream::custom(SharedByteCallbacks { inner: byte_state })?;
     stream.write_all(b"hello custom stream")?;
     stream.seek(0, 0)?;
     let mut buffer = vec![0_u8; 19];
@@ -113,7 +117,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     writer.write_header(&header)?;
     writer.write_blob(FieldKey::DAT, &buffer)?;
 
-    let mut reader = ArchiveStream::custom(SharedArchiveCallbacks { inner: archive_state })?;
+    let mut reader = ArchiveStream::custom(SharedArchiveCallbacks {
+        inner: archive_state,
+    })?;
     let decoded_header = reader.read_header()?.expect("header");
     assert_eq!(decoded_header.path()?.as_deref(), Some("custom.txt"));
     let mut decoded = vec![0_u8; buffer.len()];

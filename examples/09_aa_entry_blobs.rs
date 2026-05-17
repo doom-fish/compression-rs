@@ -1,7 +1,7 @@
 mod common;
 
 use common::{artifact_dir, path_string};
-use compression::{AceQualifierType, AccessControlEntry, ArchiveFlags, EntryAclBlob, EntryXatBlob};
+use compression::{AccessControlEntry, AceQualifierType, ArchiveFlags, EntryAclBlob, EntryXatBlob};
 use std::env;
 use std::fs;
 use std::process::Command;
@@ -39,7 +39,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let decoded_xat = EntryXatBlob::from_encoded_data(&encoded_xat)?;
     decoded_xat.apply_to_path(&dir, target_name, ArchiveFlags::REPLACE_ATTRIBUTES)?;
 
-    println!("acl_entries={} xattrs={}", acl.entry_count(), xat.entry_count());
+    println!(
+        "acl_entries={} xattrs={}",
+        acl.entry_count(),
+        xat.entry_count()
+    );
     println!("✅ AppleArchive ACL/XAT blob helpers OK");
     Ok(())
 }

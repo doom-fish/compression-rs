@@ -391,6 +391,16 @@ impl ByteStream {
         Ok(())
     }
 
+    #[deprecated(
+        since = "0.2.2",
+        note = "Use ByteStream::cancel; AAByteStreamAbort is a deprecated AppleArchive compatibility shim."
+    )]
+    pub fn abort(&mut self) -> Result<()> {
+        self.ensure_open()?;
+        unsafe { ffi::aa_byte_stream::compression_rs_aa_byte_stream_abort(self.as_ptr()) };
+        Ok(())
+    }
+
     pub fn close(&mut self) -> Result<()> {
         if self.closed {
             return Ok(());
@@ -617,8 +627,7 @@ unsafe extern "C" fn custom_byte_stream_close(arg: *mut c_void) -> i32 {
 
 impl ByteStream {
     pub fn custom<T: CustomByteStreamCallbacks + 'static>(callbacks: T) -> Result<Self> {
-        let handle =
-            unsafe { ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_open() };
+        let handle = unsafe { ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_open() };
         let stream = Self::from_handle_with_upstream(handle, "AACustomByteStreamOpen", None)?;
         let state = Box::new(CustomByteStreamState {
             callbacks: Box::new(callbacks),
@@ -650,6 +659,10 @@ impl ByteStream {
                 Some(custom_byte_stream_seek),
             );
             ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_cancel_proc(
+                stream.as_ptr(),
+                Some(custom_byte_stream_cancel),
+            );
+            ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_set_abort_proc(
                 stream.as_ptr(),
                 Some(custom_byte_stream_cancel),
             );

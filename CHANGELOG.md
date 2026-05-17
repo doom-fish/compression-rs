@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.2] - 2026-05-17
+
+### Added
+
+- Deprecated compatibility aliases for `AAArchiveStreamAbort`,
+  `AAByteStreamAbort`, `AACustomArchiveStreamSetAbortProc`, and
+  `AACustomByteStreamSetAbortProc`, all routed through the modern cancel-based
+  implementations.
+
+### Changed
+
+- `COVERAGE_AUDIT.md` now records 377 verified public symbols out of 377 audited
+  macOS 26.2 symbols, with no remaining gaps or exemptions.
+
 ## [0.2.1] - 2026-05-16
 
 ### Added

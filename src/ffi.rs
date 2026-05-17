@@ -4,7 +4,7 @@ pub mod aa_entry_blob;
 pub mod aa_entry_stream;
 pub mod aa_field_key;
 pub mod aa_header;
+pub mod aea;
 pub mod compression_decode;
 pub mod compression_encode;
 pub mod compression_stream;
-pub mod aea;

@@ -26,15 +26,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     encrypted.write_all(&payload)?;
     context.close_encryption_output_stream(&mut encrypted)?;
 
-    let symmetric_key =
-        context.field_blob(AeaContextField::SymmetricKey, AeaContextFieldRepresentation::Raw)?;
+    let symmetric_key = context.field_blob(
+        AeaContextField::SymmetricKey,
+        AeaContextFieldRepresentation::Raw,
+    )?;
     let mut input = ByteStream::open_with_path(&archive_path, OPEN_READ_ONLY, 0)?;
     let mut decrypt_context = AeaContext::from_encrypted_stream(&mut input)?;
     decrypt_context.set_symmetric_key(&symmetric_key)?;
     let mut decrypted = decrypt_context.decryption_input_stream(input, ArchiveFlags::empty(), 0)?;
     assert_eq!(decrypted.read_to_end()?, payload);
 
-    println!("raw_size={} container_size={}", context.raw_size()?, context.container_size()?);
+    println!(
+        "raw_size={} container_size={}",
+        context.raw_size()?,
+        context.container_size()?
+    );
     println!("✅ AppleEncryptedArchive roundtrip OK");
     Ok(())
 }

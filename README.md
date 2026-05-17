@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple’s `Compression` and `AppleArchive` APIs on macOS.
 
-`compression-rs` 0.2.1 uses a Swift bridge in front of the C-only Apple SDK
+`compression-rs` 0.2.2 uses a Swift bridge in front of the C-only Apple SDK
 surfaces. The default API is safe Rust over opaque Swift-owned handles, while
 the original `compression.h` FFI remains available behind the `raw-ffi` feature.
 
@@ -68,6 +68,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - AppleArchive does not define a concrete `AAEntryStream` type; this crate uses
   the entry-level `AAPathList`, `AAEntryMessage`, and `AAEntryAttributes` APIs
   to cover that requested area.
+- Deprecated AppleArchive `*Abort*` compatibility shims remain available as
+  deprecated Rust aliases for audited SDK parity; prefer the `cancel` APIs in
+  new code.
 
 ## Examples
 

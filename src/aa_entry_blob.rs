@@ -59,7 +59,8 @@ impl EntryAclBlob {
     }
 
     pub(crate) fn clone_from_raw(raw: *mut c_void) -> Result<Self> {
-        let handle = unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_clone_from_raw(raw) };
+        let handle =
+            unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_clone_from_raw(raw) };
         Self::from_handle(handle, "AAEntryACLBlobClone")
     }
 
@@ -135,7 +136,9 @@ impl EntryAclBlob {
     }
 
     pub fn entry_count(&self) -> u32 {
-        unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_get_entry_count(self.as_ptr()) }
+        unsafe {
+            ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_get_entry_count(self.as_ptr())
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -187,16 +190,20 @@ impl EntryAclBlob {
             tag,
             perms,
             flags,
-            qualifier_type: AceQualifierType::from_raw(qualifier_type).ok_or_else(|| CompressionError::OperationFailed {
-                operation: "AAEntryACLBlobGetEntry",
-                code: i32::try_from(qualifier_type).unwrap_or(i32::MAX),
+            qualifier_type: AceQualifierType::from_raw(qualifier_type).ok_or_else(|| {
+                CompressionError::OperationFailed {
+                    operation: "AAEntryACLBlobGetEntry",
+                    code: i32::try_from(qualifier_type).unwrap_or(i32::MAX),
+                }
             })?,
             qualifier,
         })
     }
 
     pub fn entries(&self) -> Result<Vec<AccessControlEntry>> {
-        (0..self.entry_count()).map(|index| self.entry(index)).collect()
+        (0..self.entry_count())
+            .map(|index| self.entry(index))
+            .collect()
     }
 
     pub fn append_entry(&mut self, entry: &AccessControlEntry) -> Result<()> {
@@ -241,7 +248,8 @@ impl EntryAclBlob {
     }
 
     pub fn clear(&mut self) -> Result<()> {
-        let status = unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_clear(self.as_ptr()) };
+        let status =
+            unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_clear(self.as_ptr()) };
         util::status_result("AAEntryACLBlobClear", status)
     }
 
@@ -253,7 +261,9 @@ impl EntryAclBlob {
     }
 
     pub fn encoded_size(&self) -> usize {
-        unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_get_encoded_size(self.as_ptr()) }
+        unsafe {
+            ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_get_encoded_size(self.as_ptr())
+        }
     }
 
     pub fn encoded_data(&self) -> Result<Vec<u8>> {
@@ -309,7 +319,8 @@ impl EntryXatBlob {
     }
 
     pub(crate) fn clone_from_raw(raw: *mut c_void) -> Result<Self> {
-        let handle = unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_clone_from_raw(raw) };
+        let handle =
+            unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_clone_from_raw(raw) };
         Self::from_handle(handle, "AAEntryXATBlobClone")
     }
 
@@ -383,7 +394,9 @@ impl EntryXatBlob {
     }
 
     pub fn entry_count(&self) -> u32 {
-        unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_get_entry_count(self.as_ptr()) }
+        unsafe {
+            ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_get_entry_count(self.as_ptr())
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -438,7 +451,9 @@ impl EntryXatBlob {
     }
 
     pub fn entries(&self) -> Result<Vec<NamedBlobEntry>> {
-        (0..self.entry_count()).map(|index| self.entry(index)).collect()
+        (0..self.entry_count())
+            .map(|index| self.entry(index))
+            .collect()
     }
 
     pub fn append_entry(&mut self, entry: &NamedBlobEntry) -> Result<()> {
@@ -479,7 +494,8 @@ impl EntryXatBlob {
     }
 
     pub fn clear(&mut self) -> Result<()> {
-        let status = unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_clear(self.as_ptr()) };
+        let status =
+            unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_clear(self.as_ptr()) };
         util::status_result("AAEntryXATBlobClear", status)
     }
 
@@ -491,7 +507,9 @@ impl EntryXatBlob {
     }
 
     pub fn encoded_size(&self) -> usize {
-        unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_get_encoded_size(self.as_ptr()) }
+        unsafe {
+            ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_get_encoded_size(self.as_ptr())
+        }
     }
 
     pub fn encoded_data(&self) -> Result<Vec<u8>> {

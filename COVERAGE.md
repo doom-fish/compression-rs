@@ -1,10 +1,10 @@
 # Coverage
 
-`compression-rs` 0.2.1 follows the Swift-bridge pattern used in
+`compression-rs` 0.2.2 follows the Swift-bridge pattern used in
 `screencapturekit-rs`: Rust owns opaque pointers to Swift box objects, and the
 Swift layer owns the underlying C-only `Compression` / `AppleArchive` handles.
 
-This document tracks **requested logical-area coverage for v0.2.1** and the
+This document tracks **requested logical-area coverage for v0.2.2** and the
 additional AppleArchive / AEA surface added in this patch release. Full symbol
 coverage is tracked in `COVERAGE_AUDIT.md`.
 
@@ -47,7 +47,8 @@ coverage is tracked in `COVERAGE_AUDIT.md`.
 
 ## Audit summary
 
-- `COVERAGE_AUDIT.md` now records 373 verified public symbols out of 377 audited
+- `COVERAGE_AUDIT.md` now records 377 verified public symbols out of 377 audited
   macOS 26.2 symbols.
-- The remaining four entries are deprecated compatibility shims that stay in the
-  exempt bucket per the audit rules.
+- The four deprecated `AppleArchive.h` compatibility shims are wrapped as
+  deprecated Rust aliases or compatibility registrations, so the audited surface
+  is at 100% with no remaining gaps or exemptions.
