@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3] - 2026-05-18
+
+### Changed
+
+- Added `///` one-line API docs across the public `src/` surface outside `src/ffi/`, bringing the requested documentation pass to full coverage for that target.
+
 ## [0.2.2] - 2026-05-17
 
 ### Added

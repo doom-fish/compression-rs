@@ -4,22 +4,37 @@ use crate::{
 use std::ffi::{c_void, CStr};
 use std::ptr::{null, NonNull};
 
+/// Wraps AppleArchive entry message identifiers.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 #[repr(u32)]
 pub enum EntryMessage {
+    /// Wraps the `SearchPruneDir` variant of `EntryMessage`.
     SearchPruneDir = 10,
+    /// Wraps the `SearchExclude` variant of `EntryMessage`.
     SearchExclude = 11,
+    /// Wraps the `SearchFail` variant of `EntryMessage`.
     SearchFail = 12,
+    /// Wraps the `ExtractBegin` variant of `EntryMessage`.
     ExtractBegin = 20,
+    /// Wraps the `ExtractEnd` variant of `EntryMessage`.
     ExtractEnd = 21,
+    /// Wraps the `ExtractFail` variant of `EntryMessage`.
     ExtractFail = 22,
+    /// Wraps the `ExtractAttributes` variant of `EntryMessage`.
     ExtractAttributes = 23,
+    /// Wraps the `ExtractXat` variant of `EntryMessage`.
     ExtractXat = 24,
+    /// Wraps the `ExtractAcl` variant of `EntryMessage`.
     ExtractAcl = 25,
+    /// Wraps the `EncodeScanning` variant of `EntryMessage`.
     EncodeScanning = 30,
+    /// Wraps the `EncodeWriting` variant of `EntryMessage`.
     EncodeWriting = 31,
+    /// Wraps the `ConvertExclude` variant of `EntryMessage`.
     ConvertExclude = 40,
+    /// Wraps the `ProcessExclude` variant of `EntryMessage`.
     ProcessExclude = 50,
+    /// Wraps the `DecodeReading` variant of `EntryMessage`.
     DecodeReading = 60,
 }
 
@@ -45,53 +60,76 @@ impl EntryMessage {
     }
 }
 
+/// Wraps AppleArchive entry attribute values.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct EntryAttributes {
+    /// Wraps the `bits` field of `EntryAttributes`.
     pub bits: u32,
+    /// Wraps the `uid` field of `EntryAttributes`.
     pub uid: u32,
+    /// Wraps the `gid` field of `EntryAttributes`.
     pub gid: u32,
+    /// Wraps the `flags` field of `EntryAttributes`.
     pub flags: u32,
+    /// Wraps the `mode` field of `EntryAttributes`.
     pub mode: u32,
+    /// Wraps the `backup_time` field of `EntryAttributes`.
     pub backup_time: Timespec,
+    /// Wraps the `creation_time` field of `EntryAttributes`.
     pub creation_time: Timespec,
+    /// Wraps the `modification_time` field of `EntryAttributes`.
     pub modification_time: Timespec,
 }
 
 impl EntryAttributes {
+    /// Wraps the `UID_BIT` AppleArchive entry attribute bit.
     pub const UID_BIT: u32 = 1 << 0;
+    /// Wraps the `GID_BIT` AppleArchive entry attribute bit.
     pub const GID_BIT: u32 = 1 << 1;
+    /// Wraps the `FLAGS_BIT` AppleArchive entry attribute bit.
     pub const FLAGS_BIT: u32 = 1 << 2;
+    /// Wraps the `MODE_BIT` AppleArchive entry attribute bit.
     pub const MODE_BIT: u32 = 1 << 3;
+    /// Wraps the `BACKUP_TIME_BIT` AppleArchive entry attribute bit.
     pub const BACKUP_TIME_BIT: u32 = 1 << 4;
+    /// Wraps the `CREATION_TIME_BIT` AppleArchive entry attribute bit.
     pub const CREATION_TIME_BIT: u32 = 1 << 5;
+    /// Wraps the `MODIFICATION_TIME_BIT` AppleArchive entry attribute bit.
     pub const MODIFICATION_TIME_BIT: u32 = 1 << 6;
 
+    /// Wraps `AAPathListCreateWithDirectoryContents`.
     pub const fn has_uid(self) -> bool {
         self.bits & Self::UID_BIT != 0
     }
 
+    /// Wraps `AAPathListCreateWithDirectoryContents`.
     pub const fn has_gid(self) -> bool {
         self.bits & Self::GID_BIT != 0
     }
 
+    /// Wraps `AAPathListCreateWithDirectoryContents`.
     pub const fn has_flags(self) -> bool {
         self.bits & Self::FLAGS_BIT != 0
     }
 
+    /// Wraps `AAPathListCreateWithDirectoryContents`.
     pub const fn has_mode(self) -> bool {
         self.bits & Self::MODE_BIT != 0
     }
 }
 
+/// Wraps an `AAPathList` handle.
 #[derive(Debug)]
 pub struct PathList {
     handle: NonNull<c_void>,
 }
 
 impl PathList {
+    /// Wraps `END_NODE`.
     pub const END_NODE: u64 = u64::MAX;
 
+    /// Wraps `AAPathListCreateWithDirectoryContents`.
     pub fn from_directory_contents(
         dir: &str,
         path: Option<&str>,
@@ -113,6 +151,7 @@ impl PathList {
         })
     }
 
+    /// Wraps `AAPathListCreateWithPath`.
     pub fn from_path(dir: &str, path: &str) -> Result<Self> {
         let dir = util::cstring("dir", dir)?;
         let path = util::cstring("path", path)?;
@@ -131,12 +170,14 @@ impl PathList {
         self.handle.as_ptr()
     }
 
+    /// Wraps `AAPathListNodeGetPath`.
     pub fn first_node(&self) -> Option<u64> {
         let node =
             unsafe { ffi::aa_entry_stream::compression_rs_aa_path_list_node_first(self.as_ptr()) };
         (node != Self::END_NODE).then_some(node)
     }
 
+    /// Wraps `AAPathListNodeGetPath`.
     pub fn next_node(&self, node: u64) -> Option<u64> {
         let next = unsafe {
             ffi::aa_entry_stream::compression_rs_aa_path_list_node_next(self.as_ptr(), node)
@@ -144,6 +185,7 @@ impl PathList {
         (next != Self::END_NODE).then_some(next)
     }
 
+    /// Wraps `AAPathListNodeGetPath`.
     pub fn node_path(&self, node: u64) -> Result<String> {
         let mut length = 0_usize;
         let status = unsafe {
@@ -177,6 +219,7 @@ impl PathList {
         Ok(value.to_string())
     }
 
+    /// Wraps iterative `AAPathListNode*` traversal.
     pub fn paths(&self) -> Result<Vec<String>> {
         let mut paths = Vec::new();
         let mut node = self.first_node();

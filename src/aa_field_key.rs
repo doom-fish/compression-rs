@@ -3,6 +3,7 @@ use std::ffi::{c_void, CStr};
 use std::fmt;
 use std::ptr::NonNull;
 
+/// Wraps an `AAFieldKey` value.
 #[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct FieldKey(u32);
 
@@ -19,43 +20,77 @@ fn parse_field_key(value: &str) -> Result<FieldKey> {
 }
 
 impl FieldKey {
+    /// Wraps the `ACL` AppleArchive field key.
     pub const ACL: Self = Self::from_bytes(*b"ACL");
+    /// Wraps the `BTM` AppleArchive field key.
     pub const BTM: Self = Self::from_bytes(*b"BTM");
+    /// Wraps the `CKS` AppleArchive field key.
     pub const CKS: Self = Self::from_bytes(*b"CKS");
+    /// Wraps the `CLC` AppleArchive field key.
     pub const CLC: Self = Self::from_bytes(*b"CLC");
+    /// Wraps the `CTM` AppleArchive field key.
     pub const CTM: Self = Self::from_bytes(*b"CTM");
+    /// Wraps the `DAT` AppleArchive field key.
     pub const DAT: Self = Self::from_bytes(*b"DAT");
+    /// Wraps the `DEV` AppleArchive field key.
     pub const DEV: Self = Self::from_bytes(*b"DEV");
+    /// Wraps the `DE2` AppleArchive field key.
     pub const DE2: Self = Self::from_bytes(*b"DE2");
+    /// Wraps the `DUZ` AppleArchive field key.
     pub const DUZ: Self = Self::from_bytes(*b"DUZ");
+    /// Wraps the `FLG` AppleArchive field key.
     pub const FLG: Self = Self::from_bytes(*b"FLG");
+    /// Wraps the `GID` AppleArchive field key.
     pub const GID: Self = Self::from_bytes(*b"GID");
+    /// Wraps the `GIN` AppleArchive field key.
     pub const GIN: Self = Self::from_bytes(*b"GIN");
+    /// Wraps the `HLC` AppleArchive field key.
     pub const HLC: Self = Self::from_bytes(*b"HLC");
+    /// Wraps the `IDX` AppleArchive field key.
     pub const IDX: Self = Self::from_bytes(*b"IDX");
+    /// Wraps the `IDZ` AppleArchive field key.
     pub const IDZ: Self = Self::from_bytes(*b"IDZ");
+    /// Wraps the `INO` AppleArchive field key.
     pub const INO: Self = Self::from_bytes(*b"INO");
+    /// Wraps the `LNK` AppleArchive field key.
     pub const LNK: Self = Self::from_bytes(*b"LNK");
+    /// Wraps the `MOD` AppleArchive field key.
     pub const MOD: Self = Self::from_bytes(*b"MOD");
+    /// Wraps the `MTM` AppleArchive field key.
     pub const MTM: Self = Self::from_bytes(*b"MTM");
+    /// Wraps the `NLK` AppleArchive field key.
     pub const NLK: Self = Self::from_bytes(*b"NLK");
+    /// Wraps the `PAT` AppleArchive field key.
     pub const PAT: Self = Self::from_bytes(*b"PAT");
+    /// Wraps the `SH1` AppleArchive field key.
     pub const SH1: Self = Self::from_bytes(*b"SH1");
+    /// Wraps the `SH2` AppleArchive field key.
     pub const SH2: Self = Self::from_bytes(*b"SH2");
+    /// Wraps the `SH3` AppleArchive field key.
     pub const SH3: Self = Self::from_bytes(*b"SH3");
+    /// Wraps the `SH5` AppleArchive field key.
     pub const SH5: Self = Self::from_bytes(*b"SH5");
+    /// Wraps the `SIZ` AppleArchive field key.
     pub const SIZ: Self = Self::from_bytes(*b"SIZ");
+    /// Wraps the `SLC` AppleArchive field key.
     pub const SLC: Self = Self::from_bytes(*b"SLC");
+    /// Wraps the `TYP` AppleArchive field key.
     pub const TYP: Self = Self::from_bytes(*b"TYP");
+    /// Wraps the `UID` AppleArchive field key.
     pub const UID: Self = Self::from_bytes(*b"UID");
+    /// Wraps the `UIN` AppleArchive field key.
     pub const UIN: Self = Self::from_bytes(*b"UIN");
+    /// Wraps the `XAT` AppleArchive field key.
     pub const XAT: Self = Self::from_bytes(*b"XAT");
+    /// Wraps the `YAF` AppleArchive field key.
     pub const YAF: Self = Self::from_bytes(*b"YAF");
 
+    /// Wraps three-byte `AAFieldKey` construction.
     pub const fn from_bytes(bytes: [u8; 3]) -> Self {
         Self(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0]))
     }
 
+    /// Wraps string parsing for `AAFieldKey` values.
     pub fn parse(value: &str) -> Result<Self> {
         parse_field_key(value)
     }
@@ -64,15 +99,18 @@ impl FieldKey {
         Self(raw)
     }
 
+    /// Wraps raw `AAFieldKey` values.
     pub const fn raw(self) -> u32 {
         self.0
     }
 
+    /// Wraps three-byte `AAFieldKey` values.
     pub const fn as_bytes(self) -> [u8; 3] {
         let [a, b, c, _] = self.0.to_le_bytes();
         [a, b, c]
     }
 
+    /// Wraps string conversion for `AAFieldKey` values.
     pub fn as_string(self) -> String {
         String::from_utf8_lossy(&self.as_bytes()).into_owned()
     }
@@ -106,12 +144,14 @@ impl TryFrom<&str> for FieldKey {
     }
 }
 
+/// Wraps an `AAFieldKeySet` handle.
 #[derive(Debug)]
 pub struct FieldKeySet {
     handle: NonNull<c_void>,
 }
 
 impl FieldKeySet {
+    /// Wraps `AAFieldKeySetCreate`.
     pub fn new() -> Result<Self> {
         let handle = unsafe { ffi::aa_field_key::compression_rs_aa_field_key_set_create() };
         Ok(Self {
@@ -119,6 +159,7 @@ impl FieldKeySet {
         })
     }
 
+    /// Wraps `AAFieldKeySetCreateWithString`.
     pub fn from_csv(value: &str) -> Result<Self> {
         let value = util::cstring("value", value)?;
         let handle = unsafe {
@@ -133,12 +174,14 @@ impl FieldKeySet {
         self.handle.as_ptr()
     }
 
+    /// Wraps `AAFieldKeySetClear`.
     pub fn clear(&mut self) -> Result<()> {
         let status =
             unsafe { ffi::aa_field_key::compression_rs_aa_field_key_set_clear(self.as_ptr()) };
         util::status_result("AAFieldKeySetClear", status)
     }
 
+    /// Wraps `AAFieldKeySetContainsKey`.
     pub fn contains(&self, key: FieldKey) -> Result<bool> {
         match unsafe {
             ffi::aa_field_key::compression_rs_aa_field_key_set_contains_key(
@@ -155,6 +198,7 @@ impl FieldKeySet {
         }
     }
 
+    /// Wraps `AAFieldKeySetInsertKey`.
     pub fn insert(&mut self, key: FieldKey) -> Result<()> {
         let status = unsafe {
             ffi::aa_field_key::compression_rs_aa_field_key_set_insert_key(self.as_ptr(), key.raw())
@@ -162,6 +206,7 @@ impl FieldKeySet {
         util::status_result("AAFieldKeySetInsertKey", status)
     }
 
+    /// Wraps `AAFieldKeySetRemoveKey`.
     pub fn remove(&mut self, key: FieldKey) -> Result<()> {
         let status = unsafe {
             ffi::aa_field_key::compression_rs_aa_field_key_set_remove_key(self.as_ptr(), key.raw())
@@ -169,6 +214,7 @@ impl FieldKeySet {
         util::status_result("AAFieldKeySetRemoveKey", status)
     }
 
+    /// Wraps `AAFieldKeySetInsertKeySet`.
     pub fn insert_set(&mut self, other: &Self) -> Result<()> {
         let status = unsafe {
             ffi::aa_field_key::compression_rs_aa_field_key_set_insert_key_set(
@@ -179,6 +225,7 @@ impl FieldKeySet {
         util::status_result("AAFieldKeySetInsertKeySet", status)
     }
 
+    /// Wraps `AAFieldKeySetRemoveKeySet`.
     pub fn remove_set(&mut self, other: &Self) -> Result<()> {
         let status = unsafe {
             ffi::aa_field_key::compression_rs_aa_field_key_set_remove_key_set(
@@ -189,6 +236,7 @@ impl FieldKeySet {
         util::status_result("AAFieldKeySetRemoveKeySet", status)
     }
 
+    /// Wraps `AAFieldKeySetSelectKeySet`.
     pub fn select_set(&mut self, other: &Self) -> Result<()> {
         let status = unsafe {
             ffi::aa_field_key::compression_rs_aa_field_key_set_select_key_set(
@@ -199,14 +247,17 @@ impl FieldKeySet {
         util::status_result("AAFieldKeySetSelectKeySet", status)
     }
 
+    /// Wraps `AAFieldKeySetGetKey`.
     pub fn len(&self) -> u32 {
         unsafe { ffi::aa_field_key::compression_rs_aa_field_key_set_get_key_count(self.as_ptr()) }
     }
 
+    /// Wraps `AAFieldKeySetGetKey`.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Wraps `AAFieldKeySetGetKey`.
     pub fn key(&self, index: u32) -> Result<FieldKey> {
         if index >= self.len() {
             return Err(CompressionError::OperationFailed {
@@ -220,6 +271,7 @@ impl FieldKeySet {
         }))
     }
 
+    /// Wraps `AAFieldKeySetSerialize`.
     pub fn serialize(&self) -> Result<String> {
         let capacity = (self.len() as usize)
             .saturating_mul(4)

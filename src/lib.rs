@@ -24,6 +24,7 @@ mod compression_encode;
 mod compression_stream;
 mod error;
 mod ffi;
+/// Wraps the raw `compression.h` and AppleArchive FFI surface.
 #[cfg(feature = "raw-ffi")]
 pub mod raw_ffi;
 pub(crate) mod util;
@@ -60,19 +61,29 @@ pub use compression_encode::{
 pub use compression_stream::{CompressionStream, Decoder, Encoder, StreamOperation};
 pub use error::{CompressionError, Result};
 
+/// Wraps `compression_algorithm` values from `compression.h`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Algorithm {
+    /// Wraps `COMPRESSION_LZ4`.
     Lz4,
+    /// Wraps `COMPRESSION_ZLIB`.
     Zlib,
+    /// Wraps `COMPRESSION_LZMA`.
     Lzma,
+    /// Wraps `COMPRESSION_LZ4_RAW`.
     Lz4Raw,
+    /// Wraps `COMPRESSION_BROTLI`.
     Brotli,
+    /// Wraps `COMPRESSION_LZFSE`.
     Lzfse,
+    /// Wraps `COMPRESSION_LZBITMAP`.
     Lzbitmap,
 }
 
 impl Algorithm {
+    /// Wraps the streaming-capable `compression_algorithm` set.
     pub const ALL: [Self; 5] = [Self::Lz4, Self::Zlib, Self::Lzma, Self::Brotli, Self::Lzfse];
+    /// Wraps the buffer-capable `compression_algorithm` set.
     pub const BUFFER_ALL: [Self; 7] = [
         Self::Lz4,
         Self::Zlib,
@@ -83,6 +94,7 @@ impl Algorithm {
         Self::Lzbitmap,
     ];
 
+    /// Wraps stream support for `compression_stream_*` entry points.
     pub const fn supports_streams(self) -> bool {
         !matches!(self, Self::Lz4Raw | Self::Lzbitmap)
     }

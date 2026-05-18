@@ -4,9 +4,12 @@ use std::ptr::NonNull;
 
 const OUTPUT_CHUNK_LEN: usize = 32 * 1024;
 
+/// Wraps `compression_stream_operation` values.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum StreamOperation {
+    /// Wraps `COMPRESSION_STREAM_ENCODE`.
     Encode,
+    /// Wraps `COMPRESSION_STREAM_DECODE`.
     Decode,
 }
 
@@ -33,6 +36,7 @@ impl StreamOperation {
     }
 }
 
+/// Wraps a `compression_stream` handle.
 #[derive(Debug)]
 pub struct CompressionStream {
     handle: NonNull<c_void>,
@@ -42,6 +46,7 @@ pub struct CompressionStream {
 }
 
 impl CompressionStream {
+    /// Wraps `compression_stream_create`.
     pub fn new(operation: StreamOperation, algorithm: Algorithm) -> Result<Self> {
         let handle = unsafe {
             ffi::compression_stream::compression_rs_compression_stream_create(
@@ -61,6 +66,7 @@ impl CompressionStream {
         self.handle.as_ptr()
     }
 
+    /// Wraps `compression_stream_process`.
     pub fn process(&mut self, mut input: &[u8], finalize: bool) -> Result<Vec<u8>> {
         if self.finished {
             return Err(CompressionError::StreamFinished {
@@ -133,6 +139,7 @@ impl CompressionStream {
         }
     }
 
+    /// Wraps `compression_stream_release`.
     pub fn finish(&mut self) -> Result<Vec<u8>> {
         if self.finished {
             Ok(Vec::new())
@@ -150,43 +157,51 @@ impl Drop for CompressionStream {
     }
 }
 
+/// Wraps `compression_stream_process` for encoding.
 #[derive(Debug)]
 pub struct Encoder {
     inner: CompressionStream,
 }
 
 impl Encoder {
+    /// Wraps `new` convenience around `compression_stream_process`.
     pub fn new(algorithm: Algorithm) -> Result<Self> {
         Ok(Self {
             inner: CompressionStream::new(StreamOperation::Encode, algorithm)?,
         })
     }
 
+    /// Wraps `process` convenience around `compression_stream_process`.
     pub fn process(&mut self, input: &[u8]) -> Result<Vec<u8>> {
         self.inner.process(input, false)
     }
 
+    /// Wraps `finish` convenience around `compression_stream_process`.
     pub fn finish(&mut self) -> Result<Vec<u8>> {
         self.inner.finish()
     }
 }
 
+/// Wraps `compression_stream_process` for decoding.
 #[derive(Debug)]
 pub struct Decoder {
     inner: CompressionStream,
 }
 
 impl Decoder {
+    /// Wraps `new` convenience around `compression_stream_process`.
     pub fn new(algorithm: Algorithm) -> Result<Self> {
         Ok(Self {
             inner: CompressionStream::new(StreamOperation::Decode, algorithm)?,
         })
     }
 
+    /// Wraps `process` convenience around `compression_stream_process`.
     pub fn process(&mut self, input: &[u8]) -> Result<Vec<u8>> {
         self.inner.process(input, false)
     }
 
+    /// Wraps `finish` convenience around `compression_stream_process`.
     pub fn finish(&mut self) -> Result<Vec<u8>> {
         self.inner.finish()
     }

@@ -16,6 +16,7 @@ enum ArchiveStreamUpstream {
     Archive(Box<ArchiveStream>),
 }
 
+/// Wraps an `AAArchiveStream` handle.
 #[derive(Debug)]
 pub struct ArchiveStream {
     handle: NonNull<c_void>,
@@ -25,6 +26,7 @@ pub struct ArchiveStream {
 }
 
 impl ArchiveStream {
+    /// Wraps `AAExtractArchiveOutputStreamOpen`.
     pub fn extract_output(dir: &str, flags: ArchiveFlags, n_threads: i32) -> Result<Self> {
         let dir = util::cstring("dir", dir)?;
         let handle = unsafe {
@@ -42,6 +44,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AAEncodeArchiveOutputStreamOpen`.
     pub fn encode_output(stream: ByteStream, flags: ArchiveFlags, n_threads: i32) -> Result<Self> {
         let handle = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_encode_archive_output_stream_open(
@@ -58,6 +61,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AADecodeArchiveInputStreamOpen`.
     pub fn decode_input(stream: ByteStream, flags: ArchiveFlags, n_threads: i32) -> Result<Self> {
         let handle = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_decode_archive_input_stream_open(
@@ -74,6 +78,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AAConvertArchiveOutputStreamOpen`.
     pub fn convert_output(
         stream: ArchiveStream,
         insert_key_set: &FieldKeySet,
@@ -112,6 +117,7 @@ impl ArchiveStream {
         }
     }
 
+    /// Wraps `AAArchiveStreamWriteHeader`.
     pub fn write_header(&mut self, header: &Header) -> Result<()> {
         self.ensure_open()?;
         let status = unsafe {
@@ -123,6 +129,7 @@ impl ArchiveStream {
         util::status_result("AAArchiveStreamWriteHeader", status)
     }
 
+    /// Wraps `AAArchiveStreamWriteBlob`.
     pub fn write_blob(&mut self, key: FieldKey, buffer: &[u8]) -> Result<()> {
         self.ensure_open()?;
         let status = unsafe {
@@ -136,6 +143,7 @@ impl ArchiveStream {
         util::status_result("AAArchiveStreamWriteBlob", status)
     }
 
+    /// Wraps `AAArchiveStreamReadHeader`.
     pub fn read_header(&mut self) -> Result<Option<Header>> {
         self.ensure_open()?;
         let mut status = 0_i32;
@@ -158,6 +166,7 @@ impl ArchiveStream {
         }
     }
 
+    /// Wraps `AAArchiveStreamReadHeader`.
     pub fn read_header_into(&mut self, header: &mut Header) -> Result<bool> {
         self.ensure_open()?;
         match unsafe {
@@ -175,6 +184,7 @@ impl ArchiveStream {
         }
     }
 
+    /// Wraps `AAArchiveStreamReadBlob`.
     pub fn read_blob(&mut self, key: FieldKey, buffer: &mut [u8]) -> Result<()> {
         self.ensure_open()?;
         let status = unsafe {
@@ -188,6 +198,7 @@ impl ArchiveStream {
         util::status_result("AAArchiveStreamReadBlob", status)
     }
 
+    /// Wraps `AAArchiveStreamWritePathList`.
     pub fn write_path_list(
         &mut self,
         path_list: &PathList,
@@ -211,6 +222,7 @@ impl ArchiveStream {
         util::status_result("AAArchiveStreamWritePathList", status)
     }
 
+    /// Wraps `AAArchiveStreamProcess`.
     pub fn process_into(
         &mut self,
         output: &mut Self,
@@ -229,6 +241,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AAArchiveStreamClose`.
     pub fn cancel(&mut self) -> Result<()> {
         self.ensure_open()?;
         unsafe { ffi::aa_archive_stream::compression_rs_aa_archive_stream_cancel(self.as_ptr()) };
@@ -239,12 +252,14 @@ impl ArchiveStream {
         since = "0.2.2",
         note = "Use ArchiveStream::cancel; AAArchiveStreamAbort is a deprecated AppleArchive compatibility shim."
     )]
+    /// Wraps `AAArchiveStreamClose`.
     pub fn abort(&mut self) -> Result<()> {
         self.ensure_open()?;
         unsafe { ffi::aa_archive_stream::compression_rs_aa_archive_stream_abort(self.as_ptr()) };
         Ok(())
     }
 
+    /// Wraps `AAArchiveStreamClose`.
     pub fn close(&mut self) -> Result<()> {
         if self.closed {
             return Ok(());
@@ -281,25 +296,32 @@ struct CustomArchiveStreamState {
     callbacks: Box<dyn CustomArchiveStreamCallbacks>,
 }
 
+/// Wraps callbacks installed by `AACustomArchiveStreamSet*Proc`.
 pub trait CustomArchiveStreamCallbacks {
+    /// Wraps `AAArchiveStreamWriteHeader`.
     fn write_header(&mut self, _header: &Header) -> Result<()> {
         Err(custom_archive_stream_error("AAArchiveStreamWriteHeader"))
     }
 
+    /// Wraps `AAArchiveStreamWriteBlob`.
     fn write_blob(&mut self, _key: FieldKey, _buffer: &[u8]) -> Result<()> {
         Err(custom_archive_stream_error("AAArchiveStreamWriteBlob"))
     }
 
+    /// Wraps `AAArchiveStreamReadHeader`.
     fn read_header(&mut self) -> Result<Option<Header>> {
         Err(custom_archive_stream_error("AAArchiveStreamReadHeader"))
     }
 
+    /// Wraps `AAArchiveStreamReadBlob`.
     fn read_blob(&mut self, _key: FieldKey, _buffer: &mut [u8]) -> Result<()> {
         Err(custom_archive_stream_error("AAArchiveStreamReadBlob"))
     }
 
+    /// Wraps the `cancel` convenience for `CustomArchiveStreamCallbacks`.
     fn cancel(&mut self) {}
 
+    /// Wraps the `close` convenience for `CustomArchiveStreamCallbacks`.
     fn close(&mut self) -> Result<()> {
         Ok(())
     }
@@ -439,6 +461,7 @@ unsafe extern "C" fn custom_archive_stream_close(arg: *mut c_void) -> i32 {
 }
 
 impl ArchiveStream {
+    /// Wraps `AACustomArchiveStreamOpen`.
     pub fn custom<T: CustomArchiveStreamCallbacks + 'static>(callbacks: T) -> Result<Self> {
         let handle =
             unsafe { ffi::aa_archive_stream::compression_rs_aa_custom_archive_stream_open() };
@@ -490,13 +513,31 @@ impl ArchiveStream {
     }
 }
 
+/// Wraps payloads delivered through `AAEntryMessageProc`.
 pub enum EntryMessageData {
+    /// Wraps the `None` payload delivered by `AAEntryMessageProc`.
     None,
+    /// Wraps the `Header` payload delivered by `AAEntryMessageProc`.
     Header(Header),
-    EntryIds { idx: u64, idz: u64 },
-    Progress { total: u64, current: u64 },
+    /// Wraps the `EntryIds` payload delivered by `AAEntryMessageProc`.
+    EntryIds {
+        /// Wraps the `idx` field delivered by `AAEntryMessageProc`.
+        idx: u64,
+        /// Wraps the `idz` field delivered by `AAEntryMessageProc`.
+        idz: u64,
+    },
+    /// Wraps the `Progress` payload delivered by `AAEntryMessageProc`.
+    Progress {
+        /// Wraps the `total` field delivered by `AAEntryMessageProc`.
+        total: u64,
+        /// Wraps the `current` field delivered by `AAEntryMessageProc`.
+        current: u64,
+    },
+    /// Wraps the `Attributes` payload delivered by `AAEntryMessageProc`.
     Attributes(EntryAttributes),
+    /// Wraps the `Xat` payload delivered by `AAEntryMessageProc`.
     Xat(EntryXatBlob),
+    /// Wraps the `Acl` payload delivered by `AAEntryMessageProc`.
     Acl(EntryAclBlob),
 }
 
@@ -522,14 +563,20 @@ impl std::fmt::Debug for EntryMessageData {
     }
 }
 
+/// Wraps `AAEntryMessageProc` event data.
 #[derive(Debug)]
 pub struct EntryMessageEvent {
+    /// Wraps the `message` field of `EntryMessageEvent`.
     pub message: EntryMessage,
+    /// Wraps the `path` field of `EntryMessageEvent`.
     pub path: String,
+    /// Wraps the `data` field of `EntryMessageEvent`.
     pub data: EntryMessageData,
 }
 
+/// Wraps handlers installed through `AAEntryMessageProc`.
 pub trait EntryMessageHandler {
+    /// Wraps the `handle` convenience for `EntryMessageHandler`.
     fn handle(&mut self, event: &mut EntryMessageEvent) -> Result<i32>;
 }
 
@@ -699,6 +746,7 @@ unsafe extern "C" fn archive_entry_message_proc(
 }
 
 impl ArchiveStream {
+    /// Wraps `AAExtractArchiveOutputStreamOpen`.
     pub fn extract_output_with_messages<T: EntryMessageHandler + 'static>(
         dir: &str,
         flags: ArchiveFlags,
@@ -726,6 +774,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AAEncodeArchiveOutputStreamOpen`.
     pub fn encode_output_with_messages<T: EntryMessageHandler + 'static>(
         stream: ByteStream,
         flags: ArchiveFlags,
@@ -752,6 +801,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AADecodeArchiveInputStreamOpen`.
     pub fn decode_input_with_messages<T: EntryMessageHandler + 'static>(
         stream: ByteStream,
         flags: ArchiveFlags,
@@ -778,6 +828,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AAConvertArchiveOutputStreamOpen`.
     pub fn convert_output_with_messages<T: EntryMessageHandler + 'static>(
         stream: ArchiveStream,
         insert_key_set: &FieldKeySet,
@@ -808,6 +859,7 @@ impl ArchiveStream {
         })
     }
 
+    /// Wraps `AAArchiveStreamWritePathList`.
     pub fn write_path_list_with_messages<T: EntryMessageHandler + 'static>(
         &mut self,
         path_list: &PathList,
@@ -837,6 +889,7 @@ impl ArchiveStream {
         util::status_result("AAArchiveStreamWritePathList", status)
     }
 
+    /// Wraps `AAArchiveStreamProcess`.
     pub fn process_into_with_messages<T: EntryMessageHandler + 'static>(
         &mut self,
         output: &mut Self,

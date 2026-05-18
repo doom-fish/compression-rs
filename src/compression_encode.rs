@@ -12,6 +12,7 @@ fn encode_len(dst: &mut [u8], src: &[u8], algorithm: Algorithm) -> usize {
     }
 }
 
+/// Wraps `compression_encode_buffer`.
 pub fn compression_encode_scratch_buffer_size(algorithm: Algorithm) -> usize {
     unsafe {
         ffi::compression_encode::compression_rs_compression_encode_scratch_buffer_size(
@@ -20,6 +21,7 @@ pub fn compression_encode_scratch_buffer_size(algorithm: Algorithm) -> usize {
     }
 }
 
+/// Wraps `compression_encode_buffer`.
 pub fn compression_encode_buffer(
     dst: &mut [u8],
     src: &[u8],
@@ -38,6 +40,7 @@ pub fn compression_encode_buffer(
     }
 }
 
+/// Wraps `compression_encode_buffer`.
 pub fn compress(input: &[u8], algorithm: Algorithm) -> Result<Vec<u8>> {
     if input.is_empty() {
         return Ok(Vec::new());

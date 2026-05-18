@@ -7,24 +7,38 @@ use std::ptr::NonNull;
 
 const READ_CHUNK_LEN: usize = 32 * 1024;
 
+/// Wraps `OPEN_READ_ONLY`.
 pub const OPEN_READ_ONLY: i32 = 0x0000;
+/// Wraps `OPEN_WRITE_ONLY`.
 pub const OPEN_WRITE_ONLY: i32 = 0x0001;
+/// Wraps `OPEN_READ_WRITE`.
 pub const OPEN_READ_WRITE: i32 = 0x0002;
+/// Wraps `OPEN_CREATE`.
 pub const OPEN_CREATE: i32 = 0x0200;
+/// Wraps `OPEN_TRUNCATE`.
 pub const OPEN_TRUNCATE: i32 = 0x0400;
+/// Wraps `DEFAULT_FILE_MODE`.
 pub const DEFAULT_FILE_MODE: u32 = 0o644;
 
+/// Wraps AppleArchive compression algorithm identifiers.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ArchiveCompressionAlgorithm {
+    /// Wraps the `None` variant of `ArchiveCompressionAlgorithm`.
     None,
+    /// Wraps the `Lz4` variant of `ArchiveCompressionAlgorithm`.
     Lz4,
+    /// Wraps the `Zlib` variant of `ArchiveCompressionAlgorithm`.
     Zlib,
+    /// Wraps the `Lzma` variant of `ArchiveCompressionAlgorithm`.
     Lzma,
+    /// Wraps the `Lzfse` variant of `ArchiveCompressionAlgorithm`.
     Lzfse,
+    /// Wraps the `Lzbitmap` variant of `ArchiveCompressionAlgorithm`.
     Lzbitmap,
 }
 
 impl ArchiveCompressionAlgorithm {
+    /// Wraps raw AppleArchive compression algorithm values.
     pub const fn from_raw(raw: u32) -> Option<Self> {
         match raw {
             0x000 => Some(Self::None),
@@ -37,6 +51,7 @@ impl ArchiveCompressionAlgorithm {
         }
     }
 
+    /// Wraps raw AppleArchive compression algorithm values.
     pub const fn as_raw(self) -> u32 {
         match self {
             Self::None => 0x000,
@@ -49,42 +64,63 @@ impl ArchiveCompressionAlgorithm {
     }
 }
 
+/// Wraps AppleArchive archive-processing flags.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct ArchiveFlags(u64);
 
 impl ArchiveFlags {
+    /// Wraps the `IGNORE_EPERM` AppleArchive archive flag bit.
     pub const IGNORE_EPERM: Self = Self(1_u64 << 0);
+    /// Wraps the `ARCHIVE_DEDUPLICATE_DAT` AppleArchive archive flag bit.
     pub const ARCHIVE_DEDUPLICATE_DAT: Self = Self(1_u64 << 1);
+    /// Wraps the `ARCHIVE_NO_RESOLVE_ACL_QUALIFIERS` AppleArchive archive flag bit.
     pub const ARCHIVE_NO_RESOLVE_ACL_QUALIFIERS: Self = Self(1_u64 << 2);
+    /// Wraps the `REPLACE_ATTRIBUTES` AppleArchive archive flag bit.
     pub const REPLACE_ATTRIBUTES: Self = Self(1_u64 << 3);
+    /// Wraps the `EXTRACT_NO_AUTO_DEDUP` AppleArchive archive flag bit.
     pub const EXTRACT_NO_AUTO_DEDUP: Self = Self(1_u64 << 4);
+    /// Wraps the `EXTRACT_NO_AUTO_SPARSE` AppleArchive archive flag bit.
     pub const EXTRACT_NO_AUTO_SPARSE: Self = Self(1_u64 << 5);
+    /// Wraps the `CROSS_VOLUME_BOUNDARIES` AppleArchive archive flag bit.
     pub const CROSS_VOLUME_BOUNDARIES: Self = Self(1_u64 << 6);
+    /// Wraps the `EXTRACT_AUTO_DEDUP_AS_HARD_LINKS` AppleArchive archive flag bit.
     pub const EXTRACT_AUTO_DEDUP_AS_HARD_LINKS: Self = Self(1_u64 << 7);
+    /// Wraps the `DECODE_INSERT_IDX` AppleArchive archive flag bit.
     pub const DECODE_INSERT_IDX: Self = Self(1_u64 << 8);
+    /// Wraps the `EXCLUDE_METADATA_ENTRIES` AppleArchive archive flag bit.
     pub const EXCLUDE_METADATA_ENTRIES: Self = Self(1_u64 << 9);
+    /// Wraps the `PROCESS_RANDOM_ACCESS_OUTPUT` AppleArchive archive flag bit.
     pub const PROCESS_RANDOM_ACCESS_OUTPUT: Self = Self(1_u64 << 10);
+    /// Wraps the `VERBOSITY_0` AppleArchive archive flag bit.
     pub const VERBOSITY_0: Self = Self(0_u64 << 62);
+    /// Wraps the `VERBOSITY_1` AppleArchive archive flag bit.
     pub const VERBOSITY_1: Self = Self(1_u64 << 62);
+    /// Wraps the `VERBOSITY_2` AppleArchive archive flag bit.
     pub const VERBOSITY_2: Self = Self(2_u64 << 62);
+    /// Wraps the `VERBOSITY_3` AppleArchive archive flag bit.
     pub const VERBOSITY_3: Self = Self(3_u64 << 62);
 
+    /// Wraps an empty AppleArchive archive flag set.
     pub const fn empty() -> Self {
         Self(0)
     }
 
+    /// Wraps the raw AppleArchive archive flag bits.
     pub const fn bits(self) -> u64 {
         self.0
     }
 
+    /// Wraps raw AppleArchive archive flag bits.
     pub const fn from_bits(bits: u64) -> Self {
         Self(bits)
     }
 
+    /// Wraps AppleArchive archive flag containment checks.
     pub const fn contains(self, other: Self) -> bool {
         (self.0 & other.0) == other.0
     }
 
+    /// Wraps AppleArchive archive verbosity flag construction.
     pub const fn verbosity(level: u64) -> Self {
         let clamped = if level > 3 { 3 } else { level };
         Self(clamped << 62)
@@ -125,6 +161,7 @@ pub enum ByteStreamUpstream {
     Stream(Box<ByteStream>),
 }
 
+/// Wraps an `AAByteStream` handle.
 #[derive(Debug)]
 pub struct ByteStream {
     handle: NonNull<c_void>,
@@ -145,6 +182,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AAFileStreamOpenWithFD`.
     pub fn from_fd(fd: RawFd, automatic_close: bool) -> Result<Self> {
         let handle = unsafe {
             ffi::aa_byte_stream::compression_rs_aa_byte_stream_open_with_fd(fd, automatic_close)
@@ -156,10 +194,12 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AAFileStreamOpenWithFD` through `File` ownership.
     pub fn from_file(file: File) -> Result<Self> {
         Self::from_fd(file.into_raw_fd(), true)
     }
 
+    /// Wraps `AAFileStreamOpenWithPath`.
     pub fn open_with_path(path: &str, open_flags: i32, open_mode: u32) -> Result<Self> {
         let path = util::cstring("path", path)?;
         let handle = unsafe {
@@ -176,6 +216,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AATempFileStreamOpen`.
     pub fn temp_file() -> Result<Self> {
         let handle = unsafe { ffi::aa_byte_stream::compression_rs_aa_temp_file_stream_open() };
         Ok(Self {
@@ -185,6 +226,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AASharedBufferPipeOpen`.
     pub fn shared_buffer_pipe(buffer_capacity: usize) -> Result<(Self, Self)> {
         let mut ostream = std::ptr::null_mut();
         let mut istream = std::ptr::null_mut();
@@ -228,6 +270,7 @@ impl ByteStream {
         }
     }
 
+    /// Wraps `AACompressionOutputStreamOpen`.
     pub fn into_compression_output(
         self,
         compression_algorithm: ArchiveCompressionAlgorithm,
@@ -251,6 +294,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AACompressionOutputStreamOpenExisting`.
     pub fn into_existing_compression_output(
         self,
         flags: ArchiveFlags,
@@ -270,6 +314,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AADecompressionInputStreamOpen`.
     pub fn into_decompression_input(self, flags: ArchiveFlags, n_threads: i32) -> Result<Self> {
         let handle = unsafe {
             ffi::aa_byte_stream::compression_rs_aa_decompression_input_stream_open(
@@ -285,6 +330,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AADecompressionRandomAccessInputStreamOpen`.
     pub fn into_random_access_decompression_input(
         self,
         alloc_limit: usize,
@@ -306,6 +352,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AAByteStreamWrite`.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
         self.ensure_open()?;
         util::ssize_result("AAByteStreamWrite", unsafe {
@@ -317,6 +364,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AAByteStreamWrite`.
     pub fn write_all(&mut self, mut buffer: &[u8]) -> Result<()> {
         while !buffer.is_empty() {
             let written = self.write(buffer)?;
@@ -331,6 +379,7 @@ impl ByteStream {
         Ok(())
     }
 
+    /// Wraps `AAByteStreamPWrite`.
     pub fn pwrite(&mut self, buffer: &[u8], offset: i64) -> Result<usize> {
         self.ensure_open()?;
         util::ssize_result("AAByteStreamPWrite", unsafe {
@@ -343,6 +392,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AAByteStreamRead`.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
         self.ensure_open()?;
         util::ssize_result("AAByteStreamRead", unsafe {
@@ -354,6 +404,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AAByteStreamPRead`.
     pub fn pread(&mut self, buffer: &mut [u8], offset: i64) -> Result<usize> {
         self.ensure_open()?;
         util::ssize_result("AAByteStreamPRead", unsafe {
@@ -366,6 +417,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AAByteStreamSeek`.
     pub fn seek(&mut self, offset: i64, whence: i32) -> Result<u64> {
         self.ensure_open()?;
         util::off_t_result("AAByteStreamSeek", unsafe {
@@ -373,6 +425,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps repeated `AAByteStreamRead` calls.
     pub fn read_to_end(&mut self) -> Result<Vec<u8>> {
         let mut output = Vec::new();
         loop {
@@ -385,6 +438,7 @@ impl ByteStream {
         }
     }
 
+    /// Wraps `AAByteStreamClose`.
     pub fn cancel(&mut self) -> Result<()> {
         self.ensure_open()?;
         unsafe { ffi::aa_byte_stream::compression_rs_aa_byte_stream_cancel(self.as_ptr()) };
@@ -395,12 +449,14 @@ impl ByteStream {
         since = "0.2.2",
         note = "Use ByteStream::cancel; AAByteStreamAbort is a deprecated AppleArchive compatibility shim."
     )]
+    /// Wraps `AAByteStreamClose`.
     pub fn abort(&mut self) -> Result<()> {
         self.ensure_open()?;
         unsafe { ffi::aa_byte_stream::compression_rs_aa_byte_stream_abort(self.as_ptr()) };
         Ok(())
     }
 
+    /// Wraps `AAByteStreamClose`.
     pub fn close(&mut self) -> Result<()> {
         if self.closed {
             return Ok(());
@@ -411,6 +467,7 @@ impl ByteStream {
         util::status_result("AAByteStreamClose", status)
     }
 
+    /// Wraps `AAByteStreamProcess`.
     pub fn process_into(&mut self, output: &mut Self) -> Result<u64> {
         self.ensure_open()?;
         output.ensure_open()?;
@@ -422,6 +479,7 @@ impl ByteStream {
         })
     }
 
+    /// Wraps `AARandomAccessByteStreamProcess`.
     pub fn process_random_access_into(
         &mut self,
         output: &mut Self,
@@ -469,29 +527,37 @@ struct CustomByteStreamState {
     callbacks: Box<dyn CustomByteStreamCallbacks>,
 }
 
+/// Wraps callbacks installed by `AACustomByteStreamSet*Proc`.
 pub trait CustomByteStreamCallbacks {
+    /// Wraps `AAByteStreamWrite`.
     fn write(&mut self, _buffer: &[u8]) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamWrite"))
     }
 
+    /// Wraps `AAByteStreamPWrite`.
     fn pwrite(&mut self, _buffer: &[u8], _offset: i64) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamPWrite"))
     }
 
+    /// Wraps `AAByteStreamRead`.
     fn read(&mut self, _buffer: &mut [u8]) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamRead"))
     }
 
+    /// Wraps `AAByteStreamPRead`.
     fn pread(&mut self, _buffer: &mut [u8], _offset: i64) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamPRead"))
     }
 
+    /// Wraps `AAByteStreamSeek`.
     fn seek(&mut self, _offset: i64, _whence: i32) -> Result<i64> {
         Err(custom_byte_stream_error("AAByteStreamSeek"))
     }
 
+    /// Wraps the `cancel` convenience for `CustomByteStreamCallbacks`.
     fn cancel(&mut self) {}
 
+    /// Wraps the `close` convenience for `CustomByteStreamCallbacks`.
     fn close(&mut self) -> Result<()> {
         Ok(())
     }
@@ -626,6 +692,7 @@ unsafe extern "C" fn custom_byte_stream_close(arg: *mut c_void) -> i32 {
 }
 
 impl ByteStream {
+    /// Wraps `AACustomByteStreamOpen`.
     pub fn custom<T: CustomByteStreamCallbacks + 'static>(callbacks: T) -> Result<Self> {
         let handle = unsafe { ffi::aa_byte_stream::compression_rs_aa_custom_byte_stream_open() };
         let stream = Self::from_handle_with_upstream(handle, "AACustomByteStreamOpen", None)?;
