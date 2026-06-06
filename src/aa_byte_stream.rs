@@ -594,6 +594,12 @@ unsafe fn custom_byte_stream_state(arg: *mut c_void) -> Option<&'static mut Cust
     }
 }
 
+/// Run a user byte-stream callback body, converting a panic into the failure
+/// status `-1` instead of letting it unwind across the C ABI (UB).
+fn guard_byte_i64(f: impl FnOnce() -> i64) -> i64 {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).unwrap_or(-1)
+}
+
 unsafe extern "C" fn custom_byte_stream_write(
     arg: *mut c_void,
     buffer: *const c_void,
@@ -605,10 +611,10 @@ unsafe extern "C" fn custom_byte_stream_write(
     let Some(buffer) = (unsafe { custom_byte_stream_slice(buffer, length) }) else {
         return -1;
     };
-    match state.callbacks.write(buffer) {
+    guard_byte_i64(|| match state.callbacks.write(buffer) {
         Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
         Err(error) => i64::from(custom_byte_stream_code(&error)),
-    }
+    })
 }
 
 unsafe extern "C" fn custom_byte_stream_pwrite(
@@ -623,10 +629,10 @@ unsafe extern "C" fn custom_byte_stream_pwrite(
     let Some(buffer) = (unsafe { custom_byte_stream_slice(buffer, length) }) else {
         return -1;
     };
-    match state.callbacks.pwrite(buffer, offset) {
+    guard_byte_i64(|| match state.callbacks.pwrite(buffer, offset) {
         Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
         Err(error) => i64::from(custom_byte_stream_code(&error)),
-    }
+    })
 }
 
 unsafe extern "C" fn custom_byte_stream_read(
@@ -640,10 +646,10 @@ unsafe extern "C" fn custom_byte_stream_read(
     let Some(buffer) = (unsafe { custom_byte_stream_slice_mut(buffer, length) }) else {
         return -1;
     };
-    match state.callbacks.read(buffer) {
+    guard_byte_i64(|| match state.callbacks.read(buffer) {
         Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
         Err(error) => i64::from(custom_byte_stream_code(&error)),
-    }
+    })
 }
 
 unsafe extern "C" fn custom_byte_stream_pread(
@@ -658,25 +664,25 @@ unsafe extern "C" fn custom_byte_stream_pread(
     let Some(buffer) = (unsafe { custom_byte_stream_slice_mut(buffer, length) }) else {
         return -1;
     };
-    match state.callbacks.pread(buffer, offset) {
+    guard_byte_i64(|| match state.callbacks.pread(buffer, offset) {
         Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
         Err(error) => i64::from(custom_byte_stream_code(&error)),
-    }
+    })
 }
 
 unsafe extern "C" fn custom_byte_stream_seek(arg: *mut c_void, offset: i64, whence: i32) -> i64 {
     let Some(state) = (unsafe { custom_byte_stream_state(arg) }) else {
         return -1;
     };
-    match state.callbacks.seek(offset, whence) {
+    guard_byte_i64(|| match state.callbacks.seek(offset, whence) {
         Ok(position) => position,
         Err(error) => i64::from(custom_byte_stream_code(&error)),
-    }
+    })
 }
 
 unsafe extern "C" fn custom_byte_stream_cancel(arg: *mut c_void) {
     if let Some(state) = unsafe { custom_byte_stream_state(arg) } {
-        state.callbacks.cancel();
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| state.callbacks.cancel()));
     }
 }
 
@@ -685,10 +691,13 @@ unsafe extern "C" fn custom_byte_stream_close(arg: *mut c_void) -> i32 {
         return 0;
     }
     let mut state = unsafe { Box::from_raw(arg.cast::<CustomByteStreamState>()) };
-    match state.callbacks.close() {
-        Ok(()) => 0,
-        Err(error) => custom_byte_stream_code(&error),
-    }
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+        || match state.callbacks.close() {
+            Ok(()) => 0,
+            Err(error) => custom_byte_stream_code(&error),
+        },
+    ))
+    .unwrap_or(-1)
 }
 
 impl ByteStream {

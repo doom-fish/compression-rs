@@ -363,6 +363,12 @@ unsafe fn custom_archive_stream_slice_mut<'a>(
     }
 }
 
+/// Run a user archive-stream callback body, converting a panic into the
+/// failure status `-1` instead of letting it unwind across the C ABI (UB).
+fn guard_archive_status(f: impl FnOnce() -> i32) -> i32 {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).unwrap_or(-1)
+}
+
 unsafe extern "C" fn custom_archive_stream_write_header(
     arg: *mut c_void,
     header: *mut c_void,
@@ -373,12 +379,11 @@ unsafe extern "C" fn custom_archive_stream_write_header(
     if header.is_null() {
         return -1;
     }
-    let header = match Header::from_raw_clone(header, "AAHeaderClone") {
-        Ok(header) => header,
-        Err(error) => return custom_archive_stream_code(&error),
-    };
-    match state.callbacks.write_header(&header) {
-        Ok(()) => 0,
+    match Header::from_raw_clone(header, "AAHeaderClone") {
+        Ok(header) => guard_archive_status(|| match state.callbacks.write_header(&header) {
+            Ok(()) => 0,
+            Err(error) => custom_archive_stream_code(&error),
+        }),
         Err(error) => custom_archive_stream_code(&error),
     }
 }
@@ -395,10 +400,10 @@ unsafe extern "C" fn custom_archive_stream_write_blob(
     let Some(buffer) = (unsafe { custom_archive_stream_slice(buffer, length) }) else {
         return -1;
     };
-    match state.callbacks.write_blob(FieldKey::from_raw(key), buffer) {
+    guard_archive_status(|| match state.callbacks.write_blob(FieldKey::from_raw(key), buffer) {
         Ok(()) => 0,
         Err(error) => custom_archive_stream_code(&error),
-    }
+    })
 }
 
 unsafe extern "C" fn custom_archive_stream_read_header(
@@ -408,7 +413,12 @@ unsafe extern "C" fn custom_archive_stream_read_header(
     let Some(state) = (unsafe { custom_archive_stream_state(arg) }) else {
         return -1;
     };
-    match state.callbacks.read_header() {
+    let Ok(header) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        state.callbacks.read_header()
+    })) else {
+        return -1;
+    };
+    match header {
         Ok(Some(header)) => {
             if header_out.is_null() {
                 return -1;
@@ -437,15 +447,15 @@ unsafe extern "C" fn custom_archive_stream_read_blob(
     let Some(buffer) = (unsafe { custom_archive_stream_slice_mut(buffer, length) }) else {
         return -1;
     };
-    match state.callbacks.read_blob(FieldKey::from_raw(key), buffer) {
+    guard_archive_status(|| match state.callbacks.read_blob(FieldKey::from_raw(key), buffer) {
         Ok(()) => 0,
         Err(error) => custom_archive_stream_code(&error),
-    }
+    })
 }
 
 unsafe extern "C" fn custom_archive_stream_cancel(arg: *mut c_void) {
     if let Some(state) = unsafe { custom_archive_stream_state(arg) } {
-        state.callbacks.cancel();
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| state.callbacks.cancel()));
     }
 }
 
@@ -454,10 +464,10 @@ unsafe extern "C" fn custom_archive_stream_close(arg: *mut c_void) -> i32 {
         return 0;
     }
     let mut state = unsafe { Box::from_raw(arg.cast::<CustomArchiveStreamState>()) };
-    match state.callbacks.close() {
+    guard_archive_status(|| match state.callbacks.close() {
         Ok(()) => 0,
         Err(error) => custom_archive_stream_code(&error),
-    }
+    })
 }
 
 impl ArchiveStream {
