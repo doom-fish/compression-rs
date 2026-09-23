@@ -1,4 +1,7 @@
 use crate::{ffi, util, CompressionError, Result};
+use doom_fish_utils::panic_safe::{
+    catch_user_panic, catch_user_panic_result, catch_user_panic_result_with_cleanup,
+};
 use std::ffi::c_void;
 use std::fs::File;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
@@ -594,12 +597,6 @@ unsafe fn custom_byte_stream_state(arg: *mut c_void) -> Option<&'static mut Cust
     }
 }
 
-/// Run a user byte-stream callback body, converting a panic into the failure
-/// status `-1` instead of letting it unwind across the C ABI (UB).
-fn guard_byte_i64(f: impl FnOnce() -> i64) -> i64 {
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).unwrap_or(-1)
-}
-
 unsafe extern "C" fn custom_byte_stream_write(
     arg: *mut c_void,
     buffer: *const c_void,
@@ -611,10 +608,13 @@ unsafe extern "C" fn custom_byte_stream_write(
     let Some(buffer) = (unsafe { custom_byte_stream_slice(buffer, length) }) else {
         return -1;
     };
-    guard_byte_i64(|| match state.callbacks.write(buffer) {
-        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
-        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    catch_user_panic_result("AAByteStreamWriteProc", || {
+        match state.callbacks.write(buffer) {
+            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Err(error) => i64::from(custom_byte_stream_code(&error)),
+        }
     })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_byte_stream_pwrite(
@@ -629,10 +629,13 @@ unsafe extern "C" fn custom_byte_stream_pwrite(
     let Some(buffer) = (unsafe { custom_byte_stream_slice(buffer, length) }) else {
         return -1;
     };
-    guard_byte_i64(|| match state.callbacks.pwrite(buffer, offset) {
-        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
-        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    catch_user_panic_result("AAByteStreamPWriteProc", || {
+        match state.callbacks.pwrite(buffer, offset) {
+            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Err(error) => i64::from(custom_byte_stream_code(&error)),
+        }
     })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_byte_stream_read(
@@ -646,10 +649,13 @@ unsafe extern "C" fn custom_byte_stream_read(
     let Some(buffer) = (unsafe { custom_byte_stream_slice_mut(buffer, length) }) else {
         return -1;
     };
-    guard_byte_i64(|| match state.callbacks.read(buffer) {
-        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
-        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    catch_user_panic_result("AAByteStreamReadProc", || {
+        match state.callbacks.read(buffer) {
+            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Err(error) => i64::from(custom_byte_stream_code(&error)),
+        }
     })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_byte_stream_pread(
@@ -664,25 +670,31 @@ unsafe extern "C" fn custom_byte_stream_pread(
     let Some(buffer) = (unsafe { custom_byte_stream_slice_mut(buffer, length) }) else {
         return -1;
     };
-    guard_byte_i64(|| match state.callbacks.pread(buffer, offset) {
-        Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
-        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    catch_user_panic_result("AAByteStreamPReadProc", || {
+        match state.callbacks.pread(buffer, offset) {
+            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Err(error) => i64::from(custom_byte_stream_code(&error)),
+        }
     })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_byte_stream_seek(arg: *mut c_void, offset: i64, whence: i32) -> i64 {
     let Some(state) = (unsafe { custom_byte_stream_state(arg) }) else {
         return -1;
     };
-    guard_byte_i64(|| match state.callbacks.seek(offset, whence) {
-        Ok(position) => position,
-        Err(error) => i64::from(custom_byte_stream_code(&error)),
+    catch_user_panic_result("AAByteStreamSeekProc", || {
+        match state.callbacks.seek(offset, whence) {
+            Ok(position) => position,
+            Err(error) => i64::from(custom_byte_stream_code(&error)),
+        }
     })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_byte_stream_cancel(arg: *mut c_void) {
     if let Some(state) = unsafe { custom_byte_stream_state(arg) } {
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| state.callbacks.cancel()));
+        catch_user_panic("AAByteStreamCancelProc", || state.callbacks.cancel());
     }
 }
 
@@ -690,13 +702,16 @@ unsafe extern "C" fn custom_byte_stream_close(arg: *mut c_void) -> i32 {
     if arg.is_null() {
         return 0;
     }
-    let mut state = unsafe { Box::from_raw(arg.cast::<CustomByteStreamState>()) };
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(
-        || match state.callbacks.close() {
+    let state = unsafe { Box::from_raw(arg.cast::<CustomByteStreamState>()) };
+    catch_user_panic_result_with_cleanup(
+        "AAByteStreamCloseProc",
+        state,
+        |state| match state.callbacks.close() {
             Ok(()) => 0,
             Err(error) => custom_byte_stream_code(&error),
         },
-    ))
+        |_| {},
+    )
     .unwrap_or(-1)
 }
 

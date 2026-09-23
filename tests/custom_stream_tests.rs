@@ -287,3 +287,65 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
 
     Ok(())
 }
+
+struct PanicOnDrop;
+
+impl Drop for PanicOnDrop {
+    fn drop(&mut self) {
+        panic!("state destructor panic");
+    }
+}
+
+struct PanickingTeardown {
+    _guard: PanicOnDrop,
+}
+
+impl CustomByteStreamCallbacks for PanickingTeardown {}
+
+impl CustomArchiveStreamCallbacks for PanickingTeardown {}
+
+#[test]
+fn panicking_state_destructors_fail_close_instead_of_aborting(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut stream = ByteStream::custom(PanickingTeardown {
+        _guard: PanicOnDrop,
+    })?;
+    assert!(stream.close().is_err());
+
+    let mut archive = ArchiveStream::custom(PanickingTeardown {
+        _guard: PanicOnDrop,
+    })?;
+    assert!(archive.close().is_err());
+    Ok(())
+}
+
+#[test]
+fn panicking_message_handler_fails_the_operation_instead_of_aborting(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let artifact_dir = artifact_dir("panicking-message-handler");
+    let source_dir = artifact_dir.join("source");
+    fs::create_dir_all(&source_dir)?;
+    fs::write(source_dir.join("file.txt"), b"payload")?;
+    let source_dir_string = path_string(&source_dir);
+    let path_list =
+        PathList::from_directory_contents(&source_dir_string, None, ArchiveFlags::empty(), 0)?;
+    let key_set = FieldKeySet::from_csv("TYP,PAT,SIZ,DAT")?;
+    let stream = ByteStream::open_with_path(
+        &path_string(&artifact_dir.join("payload.aar")),
+        OPEN_WRITE_ONLY | OPEN_CREATE | OPEN_TRUNCATE,
+        DEFAULT_FILE_MODE,
+    )?;
+    let mut archive = ArchiveStream::encode_output(stream, ArchiveFlags::empty(), 0)?;
+    let result = archive.write_path_list_with_messages(
+        &path_list,
+        &key_set,
+        &source_dir_string,
+        ArchiveFlags::empty(),
+        0,
+        |_event: &mut EntryMessageEvent| -> compression::Result<i32> {
+            panic!("message handler panic")
+        },
+    );
+    assert!(result.is_err());
+    Ok(())
+}

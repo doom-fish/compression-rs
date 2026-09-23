@@ -6,6 +6,9 @@ use crate::{
     aa_header::Header,
     ffi, util, CompressionError, Result,
 };
+use doom_fish_utils::panic_safe::{
+    catch_user_panic, catch_user_panic_result, catch_user_panic_result_with_cleanup,
+};
 use std::ffi::{c_char, c_void, CStr};
 use std::ptr::NonNull;
 
@@ -363,12 +366,6 @@ unsafe fn custom_archive_stream_slice_mut<'a>(
     }
 }
 
-/// Run a user archive-stream callback body, converting a panic into the
-/// failure status `-1` instead of letting it unwind across the C ABI (UB).
-fn guard_archive_status(f: impl FnOnce() -> i32) -> i32 {
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).unwrap_or(-1)
-}
-
 unsafe extern "C" fn custom_archive_stream_write_header(
     arg: *mut c_void,
     header: *mut c_void,
@@ -379,13 +376,17 @@ unsafe extern "C" fn custom_archive_stream_write_header(
     if header.is_null() {
         return -1;
     }
-    match Header::from_raw_clone(header, "AAHeaderClone") {
-        Ok(header) => guard_archive_status(|| match state.callbacks.write_header(&header) {
-            Ok(()) => 0,
+    catch_user_panic_result(
+        "AAArchiveStreamWriteHeaderProc",
+        || match Header::from_raw_clone(header, "AAHeaderClone") {
+            Ok(header) => match state.callbacks.write_header(&header) {
+                Ok(()) => 0,
+                Err(error) => custom_archive_stream_code(&error),
+            },
             Err(error) => custom_archive_stream_code(&error),
-        }),
-        Err(error) => custom_archive_stream_code(&error),
-    }
+        },
+    )
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_archive_stream_write_blob(
@@ -400,10 +401,13 @@ unsafe extern "C" fn custom_archive_stream_write_blob(
     let Some(buffer) = (unsafe { custom_archive_stream_slice(buffer, length) }) else {
         return -1;
     };
-    guard_archive_status(|| match state.callbacks.write_blob(FieldKey::from_raw(key), buffer) {
-        Ok(()) => 0,
-        Err(error) => custom_archive_stream_code(&error),
+    catch_user_panic_result("AAArchiveStreamWriteBlobProc", || {
+        match state.callbacks.write_blob(FieldKey::from_raw(key), buffer) {
+            Ok(()) => 0,
+            Err(error) => custom_archive_stream_code(&error),
+        }
     })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_archive_stream_read_header(
@@ -413,26 +417,23 @@ unsafe extern "C" fn custom_archive_stream_read_header(
     let Some(state) = (unsafe { custom_archive_stream_state(arg) }) else {
         return -1;
     };
-    let Ok(header) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        state.callbacks.read_header()
-    })) else {
+    if header_out.is_null() {
         return -1;
-    };
-    match header {
-        Ok(Some(header)) => {
-            if header_out.is_null() {
-                return -1;
-            }
-            let raw = match header.clone_raw() {
-                Ok(raw) => raw,
-                Err(error) => return custom_archive_stream_code(&error),
-            };
-            unsafe { *header_out = raw };
-            1
-        }
-        Ok(None) => 0,
-        Err(error) => custom_archive_stream_code(&error),
     }
+    catch_user_panic_result("AAArchiveStreamReadHeaderProc", || {
+        match state.callbacks.read_header() {
+            Ok(Some(header)) => match header.clone_raw() {
+                Ok(raw) => {
+                    unsafe { *header_out = raw };
+                    1
+                }
+                Err(error) => custom_archive_stream_code(&error),
+            },
+            Ok(None) => 0,
+            Err(error) => custom_archive_stream_code(&error),
+        }
+    })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_archive_stream_read_blob(
@@ -447,15 +448,18 @@ unsafe extern "C" fn custom_archive_stream_read_blob(
     let Some(buffer) = (unsafe { custom_archive_stream_slice_mut(buffer, length) }) else {
         return -1;
     };
-    guard_archive_status(|| match state.callbacks.read_blob(FieldKey::from_raw(key), buffer) {
-        Ok(()) => 0,
-        Err(error) => custom_archive_stream_code(&error),
+    catch_user_panic_result("AAArchiveStreamReadBlobProc", || {
+        match state.callbacks.read_blob(FieldKey::from_raw(key), buffer) {
+            Ok(()) => 0,
+            Err(error) => custom_archive_stream_code(&error),
+        }
     })
+    .unwrap_or(-1)
 }
 
 unsafe extern "C" fn custom_archive_stream_cancel(arg: *mut c_void) {
     if let Some(state) = unsafe { custom_archive_stream_state(arg) } {
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| state.callbacks.cancel()));
+        catch_user_panic("AAArchiveStreamCancelProc", || state.callbacks.cancel());
     }
 }
 
@@ -463,11 +467,17 @@ unsafe extern "C" fn custom_archive_stream_close(arg: *mut c_void) -> i32 {
     if arg.is_null() {
         return 0;
     }
-    let mut state = unsafe { Box::from_raw(arg.cast::<CustomArchiveStreamState>()) };
-    guard_archive_status(|| match state.callbacks.close() {
-        Ok(()) => 0,
-        Err(error) => custom_archive_stream_code(&error),
-    })
+    let state = unsafe { Box::from_raw(arg.cast::<CustomArchiveStreamState>()) };
+    catch_user_panic_result_with_cleanup(
+        "AAArchiveStreamCloseProc",
+        state,
+        |state| match state.callbacks.close() {
+            Ok(()) => 0,
+            Err(error) => custom_archive_stream_code(&error),
+        },
+        |_| {},
+    )
+    .unwrap_or(-1)
 }
 
 impl ArchiveStream {
@@ -736,23 +746,26 @@ unsafe extern "C" fn archive_entry_message_proc(
     if path.is_null() {
         return -1;
     }
-    let mut event = match archive_message_data(message, data) {
-        Ok(event_data) => EntryMessageEvent {
-            message,
-            path: unsafe { CStr::from_ptr(path) }
-                .to_string_lossy()
-                .into_owned(),
-            data: event_data,
-        },
-        Err(error) => return archive_message_code(&error),
-    };
-    match state.handler.handle(&mut event) {
-        Ok(code) => match archive_message_sync(message, data, &event.data) {
-            Ok(()) => code,
+    catch_user_panic_result("AAEntryMessageProc", || {
+        let mut event = match archive_message_data(message, data) {
+            Ok(event_data) => EntryMessageEvent {
+                message,
+                path: unsafe { CStr::from_ptr(path) }
+                    .to_string_lossy()
+                    .into_owned(),
+                data: event_data,
+            },
+            Err(error) => return archive_message_code(&error),
+        };
+        match state.handler.handle(&mut event) {
+            Ok(code) => match archive_message_sync(message, data, &event.data) {
+                Ok(()) => code,
+                Err(error) => archive_message_code(&error),
+            },
             Err(error) => archive_message_code(&error),
-        },
-        Err(error) => archive_message_code(&error),
-    }
+        }
+    })
+    .unwrap_or(-1)
 }
 
 impl ArchiveStream {
