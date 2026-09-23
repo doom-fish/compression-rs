@@ -77,3 +77,21 @@ fn shared_buffer_pipe_ends_work_on_different_threads() -> Result<(), Box<dyn std
     assert_eq!(received, expected);
     Ok(())
 }
+
+#[test]
+fn owned_fds_and_files_are_handed_to_the_stream() -> Result<(), Box<dyn std::error::Error>> {
+    let artifact_dir = artifact_dir("aa-byte-stream-owned-fd");
+    let path = artifact_dir.join("owned.bin");
+    fs::write(&path, b"owned descriptor")?;
+
+    let mut from_fd = ByteStream::from_fd(std::os::fd::OwnedFd::from(fs::File::open(&path)?))?;
+    let mut buffer = vec![0_u8; 16];
+    assert_eq!(from_fd.read(&mut buffer)?, 16);
+    assert_eq!(&buffer, b"owned descriptor");
+    from_fd.close()?;
+
+    let mut from_file = ByteStream::from_file(fs::File::open(&path)?)?;
+    assert_eq!(from_file.read_to_end()?, b"owned descriptor");
+    from_file.close()?;
+    Ok(())
+}

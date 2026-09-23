@@ -5,7 +5,7 @@ use doom_fish_utils::panic_safe::{
 use std::ffi::c_void;
 use std::fs::File;
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
-use std::os::fd::{IntoRawFd, RawFd};
+use std::os::fd::{IntoRawFd, OwnedFd, RawFd};
 use std::ptr::NonNull;
 
 const READ_CHUNK_LEN: usize = 32 * 1024;
@@ -186,7 +186,12 @@ impl ByteStream {
     }
 
     /// Wraps `AAFileStreamOpenWithFD`.
-    pub fn from_fd(fd: RawFd, automatic_close: bool) -> Result<Self> {
+    pub fn from_fd(fd: OwnedFd) -> Result<Self> {
+        unsafe { Self::from_raw_fd(fd.into_raw_fd(), true) }
+    }
+
+    #[allow(clippy::missing_safety_doc)]
+    pub unsafe fn from_raw_fd(fd: RawFd, automatic_close: bool) -> Result<Self> {
         let handle = unsafe {
             ffi::aa_byte_stream::compression_rs_aa_byte_stream_open_with_fd(fd, automatic_close)
         };
@@ -199,7 +204,7 @@ impl ByteStream {
 
     /// Wraps `AAFileStreamOpenWithFD` through `File` ownership.
     pub fn from_file(file: File) -> Result<Self> {
-        Self::from_fd(file.into_raw_fd(), true)
+        Self::from_fd(file.into())
     }
 
     /// Wraps `AAFileStreamOpenWithPath`.
