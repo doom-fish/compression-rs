@@ -6,6 +6,11 @@ GAPS: 0
 EXEMPT: 0
 COVERAGE_PCT: 100.0%
 
+Measurement notes:
+- Generated against MacOSX26.2.sdk and not regenerated for the installed 26.5/27.0 SDKs.
+- Typedefs and constants count as symbols, and VERIFIED means a Rust entry point exists. Four VERIFIED entries (`COMPRESSION_STATUS_OK`, `COMPRESSION_STATUS_END`, `COMPRESSION_STATUS_ERROR`, `compression_status`) are reachable only through the `raw-ffi` feature.
+- The four deprecated `*Abort*` shims count as VERIFIED through deprecated Rust aliases.
+
 Counted public typedefs, enum/object-style constants, and top-level/inline C functions from `compression.h` plus `AppleArchive/*.h`; macOS-unavailable entries were filtered out. The four deprecated `AppleArchive.h` compatibility shims are wrapped as deprecated Rust aliases or compatibility registrations and count as verified.
 
 ## 🟢 VERIFIED

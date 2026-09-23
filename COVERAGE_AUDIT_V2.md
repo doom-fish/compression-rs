@@ -6,6 +6,11 @@ GAPS: 0
 EXEMPT: 4
 COVERAGE_PCT: 100.0
 
+Measurement notes:
+- Generated against MacOSX26.2.sdk and not regenerated for the installed 26.5/27.0 SDKs.
+- Typedefs and constants count as symbols, and VERIFIED means a Rust entry point exists. Four VERIFIED entries (`COMPRESSION_STATUS_OK`, `COMPRESSION_STATUS_END`, `COMPRESSION_STATUS_ERROR`, `compression_status`) are reachable only through the `raw-ffi` feature.
+- `COVERAGE_PCT` is VERIFIED / (SDK_PUBLIC_SYMBOLS − EXEMPT); the four deprecated `*Abort*` shims are EXEMPT here.
+
 Comprehensive audit of Compression.h and AppleArchive/*.h headers against MacOSX26.2.sdk. The crate provides complete safe Rust bindings through both direct function wrappers and higher-level type abstractions (e.g., Algorithm enum, CompressionStream struct, ArchiveStream struct). All public macOS symbols are either verified (wrapped) or exempted (deprecated since 11.0 with modern replacements available).
 
 ## 🟢 VERIFIED

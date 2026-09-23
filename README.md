@@ -2,13 +2,19 @@
 
 Safe Rust bindings for Apple’s `Compression` and `AppleArchive` APIs on macOS.
 
-`compression-rs` 0.2.2 uses a Swift bridge in front of the C-only Apple SDK
+`compression-rs` uses a Swift bridge in front of the C-only Apple SDK
 surfaces. The default API is safe Rust over opaque Swift-owned handles, while
 the original `compression.h` FFI remains available behind the `raw-ffi` feature.
 
 ## Requirements
 
-- macOS
+- macOS 11 or later. `AeaAuthData` and
+  `AeaContext::close_encryption_output_stream` need macOS 11.3;
+  `ByteStream::into_random_access_decompression_input`,
+  `ByteStream::process_random_access_into` and
+  `AeaContext::generate_field_blob` need macOS 12; and
+  `AeaContext::decrypt_attributes` needs macOS 13. On older systems they return
+  an error.
 - Xcode / Swift toolchain available on `PATH` (`build.rs` runs `swift build`)
 
 ## Installation
@@ -61,8 +67,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - `Algorithm::ALL` contains the stream-capable algorithms.
 - `Algorithm::BUFFER_ALL` additionally includes buffer-only algorithms such as
   `Lz4Raw` and `Lzbitmap`.
-- `compress` / `decompress` use stream APIs when available and automatically
-  fall back to repeated one-shot buffer calls for buffer-only algorithms.
+- `compress` uses the stream API when available and retries one-shot encoding
+  with a larger buffer for buffer-only algorithms.
+- Decoding is bounded. `decompress`, `Decoder::new` and decode
+  `CompressionStream`s stop with `CompressionError::OutputLimitExceeded` after
+  `DEFAULT_MAX_OUTPUT_LEN` (64 MiB) of output; use
+  `decompress_with_max_output_len`, `Decoder::with_max_output_len` or
+  `CompressionStream::with_max_output_len` to choose another limit. Buffer-only
+  algorithms are decoded once into a buffer of `max_output_len + 1` bytes.
+- `compression_decode_buffer` reports a destination that is too small as
+  `OutputLimitExceeded` instead of silently truncating, and accepts inputs that
+  decode to zero bytes.
+- AppleArchive calls custom stream callbacks and entry message handlers from its
+  worker threads, possibly concurrently. `CustomByteStreamCallbacks`,
+  `CustomArchiveStreamCallbacks` and `EntryMessageHandler` therefore require
+  `Send + Sync` and take `&self`; keep mutable state in a `Mutex` or atomics. A
+  panic in a callback fails the AppleArchive operation instead of unwinding
+  into it.
+- AEA key material (`AeaContext::field_blob`, `main_key`,
+  `signature_encryption_key`) is returned as `SecretBytes`, which redacts its
+  `Debug` output and wipes its memory on drop.
 - `raw-ffi` currently preserves the direct `compression.h` surface. AppleArchive
   stays behind the Swift bridge.
 - AppleArchive does not define a concrete `AAEntryStream` type; this crate uses

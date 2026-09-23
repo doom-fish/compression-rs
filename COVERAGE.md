@@ -1,12 +1,11 @@
 # Coverage
 
-`compression-rs` 0.2.2 follows the Swift-bridge pattern used in
+`compression-rs` follows the Swift-bridge pattern used in
 `screencapturekit-rs`: Rust owns opaque pointers to Swift box objects, and the
 Swift layer owns the underlying C-only `Compression` / `AppleArchive` handles.
 
-This document tracks **requested logical-area coverage for v0.2.2** and the
-additional AppleArchive / AEA surface added in this patch release. Full symbol
-coverage is tracked in `COVERAGE_AUDIT.md`.
+This document tracks requested logical-area coverage and the AppleArchive / AEA
+surface. Full symbol coverage is tracked in `COVERAGE_AUDIT.md`.
 
 ## Requested logical areas
 
@@ -34,6 +33,12 @@ coverage is tracked in `COVERAGE_AUDIT.md`.
   `src/raw_ffi.rs`.
 - AppleArchive is intentionally exposed only through the Swift bridge in this
   release.
+- For the stream-capable algorithms, `compression_decode_buffer` decodes with
+  `compression_stream_*` into the caller's buffer, because the one-shot SDK
+  function cannot distinguish an exact fit from silent truncation or an error
+  from empty output. The buffer-only algorithms call `compression_decode_buffer`.
+- Custom stream callbacks and entry message handlers must be `Send + Sync`
+  because AppleArchive calls them from its worker threads.
 
 ## Coverage notes
 
@@ -47,8 +52,11 @@ coverage is tracked in `COVERAGE_AUDIT.md`.
 
 ## Audit summary
 
-- `COVERAGE_AUDIT.md` now records 377 verified public symbols out of 377 audited
-  macOS 26.2 symbols.
+- `COVERAGE_AUDIT.md` records 377 verified public symbols out of 377 audited
+  macOS 26.2 symbols. VERIFIED means a Rust entry point exists; four of them
+  (`COMPRESSION_STATUS_OK`, `COMPRESSION_STATUS_END`, `COMPRESSION_STATUS_ERROR`
+  and `compression_status`) are reachable only through the `raw-ffi` feature,
+  since the safe API reports statuses as `CompressionError`.
 - The four deprecated `AppleArchive.h` compatibility shims are wrapped as
   deprecated Rust aliases or compatibility registrations, so the audited surface
   is at 100% with no remaining gaps or exemptions.
