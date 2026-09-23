@@ -54,11 +54,14 @@ pub use aea::{
 };
 pub use compression_decode::{
     compression_decode_buffer, compression_decode_scratch_buffer_size, decompress,
+    decompress_with_max_output_len,
 };
 pub use compression_encode::{
     compress, compression_encode_buffer, compression_encode_scratch_buffer_size,
 };
-pub use compression_stream::{CompressionStream, Decoder, Encoder, StreamOperation};
+pub use compression_stream::{
+    CompressionStream, Decoder, Encoder, StreamOperation, DEFAULT_MAX_OUTPUT_LEN,
+};
 pub use error::{CompressionError, Result};
 
 /// Wraps `compression_algorithm` values from `compression.h`.

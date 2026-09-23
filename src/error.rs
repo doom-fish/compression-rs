@@ -41,6 +41,11 @@ pub enum CompressionError {
         /// Wraps the algorithm associated with the failing Compression call.
         algorithm: Algorithm,
     },
+    OutputLimitExceeded {
+        operation: &'static str,
+        algorithm: Algorithm,
+        max_output_len: usize,
+    },
     /// Wraps the `StreamFinished` failure case reported by Compression or AppleArchive helpers.
     StreamFinished {
         /// Wraps the failing Compression or AppleArchive entry-point name.
@@ -119,6 +124,14 @@ impl fmt::Display for CompressionError {
             } => write!(
                 f,
                 "{operation} made no progress for {algorithm:?}; the input may be truncated or corrupt"
+            ),
+            Self::OutputLimitExceeded {
+                operation,
+                algorithm,
+                max_output_len,
+            } => write!(
+                f,
+                "{operation} would produce more than {max_output_len} bytes for {algorithm:?}"
             ),
             Self::StreamFinished {
                 operation,

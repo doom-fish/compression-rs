@@ -1,6 +1,6 @@
 use crate::{ffi, Algorithm, CompressionError, Encoder, Result};
 
-fn encode_len(dst: &mut [u8], src: &[u8], algorithm: Algorithm) -> usize {
+pub fn encode_len(dst: &mut [u8], src: &[u8], algorithm: Algorithm) -> usize {
     unsafe {
         ffi::compression_encode::compression_rs_compression_encode_buffer(
             dst.as_mut_ptr(),

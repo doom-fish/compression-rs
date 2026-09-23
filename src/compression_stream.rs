@@ -4,6 +4,8 @@ use std::ptr::NonNull;
 
 const OUTPUT_CHUNK_LEN: usize = 32 * 1024;
 
+pub const DEFAULT_MAX_OUTPUT_LEN: usize = 64 * 1024 * 1024;
+
 /// Wraps `compression_stream_operation` values.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum StreamOperation {
@@ -43,11 +45,25 @@ pub struct CompressionStream {
     algorithm: Algorithm,
     operation: StreamOperation,
     finished: bool,
+    max_output_len: usize,
+    output_len: usize,
 }
 
 impl CompressionStream {
     /// Wraps `compression_stream_create`.
     pub fn new(operation: StreamOperation, algorithm: Algorithm) -> Result<Self> {
+        let max_output_len = match operation {
+            StreamOperation::Encode => usize::MAX,
+            StreamOperation::Decode => DEFAULT_MAX_OUTPUT_LEN,
+        };
+        Self::with_max_output_len(operation, algorithm, max_output_len)
+    }
+
+    pub fn with_max_output_len(
+        operation: StreamOperation,
+        algorithm: Algorithm,
+        max_output_len: usize,
+    ) -> Result<Self> {
         let handle = unsafe {
             ffi::compression_stream::compression_rs_compression_stream_create(
                 operation.as_raw(),
@@ -59,11 +75,40 @@ impl CompressionStream {
             algorithm,
             operation,
             finished: false,
+            max_output_len,
+            output_len: 0,
         })
     }
 
     fn as_ptr(&self) -> *mut c_void {
         self.handle.as_ptr()
+    }
+
+    pub(crate) fn step(
+        &mut self,
+        input: &[u8],
+        output: &mut [u8],
+        flags: i32,
+    ) -> (i32, usize, usize) {
+        let mut src_remaining = input.len();
+        let mut dst_remaining = output.len();
+        let status = unsafe {
+            ffi::compression_stream::compression_rs_compression_stream_process(
+                self.as_ptr(),
+                input.as_ptr(),
+                input.len(),
+                output.as_mut_ptr(),
+                output.len(),
+                flags,
+                &raw mut src_remaining,
+                &raw mut dst_remaining,
+            )
+        };
+        (
+            status,
+            input.len().saturating_sub(src_remaining),
+            output.len().saturating_sub(dst_remaining),
+        )
     }
 
     /// Wraps `compression_stream_process`.
@@ -81,26 +126,21 @@ impl CompressionStream {
             0
         };
         let mut output = Vec::new();
+        let mut buffer = vec![0_u8; OUTPUT_CHUNK_LEN];
 
         loop {
-            let mut buffer = vec![0_u8; OUTPUT_CHUNK_LEN];
-            let mut src_remaining = input.len();
-            let mut dst_remaining = buffer.len();
-            let status = unsafe {
-                ffi::compression_stream::compression_rs_compression_stream_process(
-                    self.as_ptr(),
-                    input.as_ptr(),
-                    input.len(),
-                    buffer.as_mut_ptr(),
-                    buffer.len(),
-                    flags,
-                    &mut src_remaining,
-                    &mut dst_remaining,
-                )
-            };
-
-            let consumed = input.len() - src_remaining;
-            let produced = buffer.len() - dst_remaining;
+            let allowance = self.max_output_len.saturating_sub(self.output_len);
+            let window = OUTPUT_CHUNK_LEN.min(allowance.saturating_add(1));
+            let (status, consumed, produced) = self.step(input, &mut buffer[..window], flags);
+            if produced > allowance {
+                self.finished = true;
+                return Err(CompressionError::OutputLimitExceeded {
+                    operation: self.operation.operation_name(),
+                    algorithm: self.algorithm,
+                    max_output_len: self.max_output_len,
+                });
+            }
+            self.output_len += produced;
             output.extend_from_slice(&buffer[..produced]);
             input = &input[consumed..];
 
@@ -110,18 +150,10 @@ impl CompressionStream {
                     return Ok(output);
                 }
                 ffi::compression_stream::COMPRESSION_STATUS_OK => {
-                    let input_consumed = src_remaining == 0;
-                    let destination_exhausted = dst_remaining == 0;
-
-                    if !finalize && input_consumed {
+                    if !finalize && input.is_empty() {
                         return Ok(output);
                     }
-
-                    if destination_exhausted || !input_consumed {
-                        continue;
-                    }
-
-                    if produced == 0 {
+                    if consumed == 0 && produced == 0 {
                         return Err(CompressionError::StreamStalled {
                             operation: self.operation.operation_name(),
                             algorithm: self.algorithm,
@@ -191,8 +223,16 @@ pub struct Decoder {
 impl Decoder {
     /// Wraps `new` convenience around `compression_stream_process`.
     pub fn new(algorithm: Algorithm) -> Result<Self> {
+        Self::with_max_output_len(algorithm, DEFAULT_MAX_OUTPUT_LEN)
+    }
+
+    pub fn with_max_output_len(algorithm: Algorithm, max_output_len: usize) -> Result<Self> {
         Ok(Self {
-            inner: CompressionStream::new(StreamOperation::Decode, algorithm)?,
+            inner: CompressionStream::with_max_output_len(
+                StreamOperation::Decode,
+                algorithm,
+                max_output_len,
+            )?,
         })
     }
 
