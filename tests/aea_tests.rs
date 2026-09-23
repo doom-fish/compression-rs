@@ -3,8 +3,8 @@ mod support;
 use compression::{
     AeaAuthData, AeaChecksumMode, AeaContext, AeaContextField, AeaContextFieldRepresentation,
     AeaEncryptionMode, AeaPadding, AeaProfile, AeaSignatureMode, ArchiveCompressionAlgorithm,
-    ArchiveFlags, ByteStream, NamedBlobEntry, DEFAULT_FILE_MODE, OPEN_CREATE, OPEN_READ_ONLY,
-    OPEN_READ_WRITE, OPEN_TRUNCATE,
+    ArchiveFlags, ByteStream, NamedBlobEntry, SecretBytes, DEFAULT_FILE_MODE, OPEN_CREATE,
+    OPEN_READ_ONLY, OPEN_READ_WRITE, OPEN_TRUNCATE,
 };
 use support::{artifact_dir, path_string, pseudo_random_bytes};
 
@@ -125,8 +125,9 @@ fn aea_round_trips_and_exposes_context_helpers() -> Result<(), Box<dyn std::erro
     let _ = AeaPadding::ADAPTIVE;
     let _ = AeaPadding::MIN_SIZE;
     let _ = AeaContextField::BlocksPerCluster;
-    let _ = AeaContext::main_key as fn(&AeaContext) -> compression::Result<Vec<u8>>;
-    let _ = AeaContext::signature_encryption_key as fn(&AeaContext) -> compression::Result<Vec<u8>>;
+    let _ = AeaContext::main_key as fn(&AeaContext) -> compression::Result<SecretBytes>;
+    let _ =
+        AeaContext::signature_encryption_key as fn(&AeaContext) -> compression::Result<SecretBytes>;
     let _ = AeaContext::set_main_key as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
     let _ = AeaContext::set_password as fn(&mut AeaContext, &[u8]) -> compression::Result<()>;
     let _ =

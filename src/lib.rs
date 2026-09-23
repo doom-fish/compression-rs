@@ -51,6 +51,7 @@ pub use aa_header::{
 pub use aea::{
     AeaAuthData, AeaChecksumMode, AeaCiphersuite, AeaContext, AeaContextField,
     AeaContextFieldRepresentation, AeaEncryptionMode, AeaPadding, AeaProfile, AeaSignatureMode,
+    SecretBytes,
 };
 pub use compression_decode::{
     compression_decode_buffer, compression_decode_scratch_buffer_size, decompress,

@@ -4,7 +4,42 @@ use crate::{
     ffi, util, CompressionError, Result,
 };
 use std::ffi::{c_void, CStr};
+use std::fmt;
+use std::ops::Deref;
 use std::ptr::{null, null_mut, NonNull};
+use std::sync::atomic::{compiler_fence, Ordering};
+
+fn wipe(bytes: &mut Vec<u8>) {
+    let start = bytes.as_mut_ptr();
+    for offset in 0..bytes.capacity() {
+        unsafe { start.add(offset).write_volatile(0) };
+    }
+    compiler_fence(Ordering::SeqCst);
+}
+
+pub struct SecretBytes(Vec<u8>);
+
+impl Deref for SecretBytes {
+    type Target = [u8];
+
+    fn deref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl fmt::Debug for SecretBytes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SecretBytes")
+            .field("len", &self.0.len())
+            .finish_non_exhaustive()
+    }
+}
+
+impl Drop for SecretBytes {
+    fn drop(&mut self) {
+        wipe(&mut self.0);
+    }
+}
 
 /// Wraps AEA profile identifiers.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -296,7 +331,7 @@ impl AeaContext {
         &self,
         field: AeaContextField,
         representation: AeaContextFieldRepresentation,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<SecretBytes> {
         let mut size = 0_usize;
         let status = unsafe {
             ffi::aea::compression_rs_aea_context_get_field_blob(
@@ -305,27 +340,35 @@ impl AeaContext {
                 representation.raw(),
                 0,
                 null_mut(),
-                &mut size,
+                &raw mut size,
             )
         };
         util::status_result("AEAContextGetFieldBlob", status)?;
 
-        let mut data = vec![0_u8; size];
+        let mut data = SecretBytes(vec![0_u8; size]);
+        let capacity = data.0.len();
         let status = unsafe {
             ffi::aea::compression_rs_aea_context_get_field_blob(
                 self.as_ptr(),
                 field.raw(),
                 representation.raw(),
-                data.len(),
-                if data.is_empty() {
+                capacity,
+                if capacity == 0 {
                     null_mut()
                 } else {
-                    data.as_mut_ptr()
+                    data.0.as_mut_ptr()
                 },
-                &mut size,
+                &raw mut size,
             )
         };
         util::status_result("AEAContextGetFieldBlob", status)?;
+        if size > capacity {
+            return Err(CompressionError::OperationFailed {
+                operation: "AEAContextGetFieldBlob",
+                code: -1,
+            });
+        }
+        data.0.truncate(size);
         Ok(data)
     }
 
@@ -429,14 +472,16 @@ impl AeaContext {
 
     /// Wraps the `auth_data` convenience for `AeaContext`.
     pub fn auth_data(&self) -> Result<Vec<u8>> {
-        self.field_blob(
-            AeaContextField::AuthData,
-            AeaContextFieldRepresentation::Raw,
-        )
+        Ok(self
+            .field_blob(
+                AeaContextField::AuthData,
+                AeaContextFieldRepresentation::Raw,
+            )?
+            .to_vec())
     }
 
     /// Wraps the `signature_encryption_key` convenience for `AeaContext`.
-    pub fn signature_encryption_key(&self) -> Result<Vec<u8>> {
+    pub fn signature_encryption_key(&self) -> Result<SecretBytes> {
         self.field_blob(
             AeaContextField::SignatureEncryptionKey,
             AeaContextFieldRepresentation::Raw,
@@ -445,14 +490,16 @@ impl AeaContext {
 
     /// Wraps the `archive_identifier` convenience for `AeaContext`.
     pub fn archive_identifier(&self) -> Result<Vec<u8>> {
-        self.field_blob(
-            AeaContextField::ArchiveIdentifier,
-            AeaContextFieldRepresentation::Raw,
-        )
+        Ok(self
+            .field_blob(
+                AeaContextField::ArchiveIdentifier,
+                AeaContextFieldRepresentation::Raw,
+            )?
+            .to_vec())
     }
 
     /// Wraps the `main_key` convenience for `AeaContext`.
-    pub fn main_key(&self) -> Result<Vec<u8>> {
+    pub fn main_key(&self) -> Result<SecretBytes> {
         self.field_blob(AeaContextField::MainKey, AeaContextFieldRepresentation::Raw)
     }
 
@@ -874,5 +921,30 @@ impl Clone for AeaAuthData {
 impl Drop for AeaAuthData {
     fn drop(&mut self) {
         unsafe { ffi::aea::compression_rs_aea_auth_data_release(self.as_ptr()) };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wipe_zeroes_the_whole_allocation() {
+        let mut bytes = vec![0xA5_u8; 48];
+        bytes.truncate(16);
+        let capacity = bytes.capacity();
+        wipe(&mut bytes);
+        let start = bytes.as_ptr();
+        let all_zero =
+            (0..capacity).all(|offset| unsafe { start.add(offset).read_volatile() } == 0);
+        assert!(all_zero);
+    }
+
+    #[test]
+    fn secret_bytes_debug_is_redacted() {
+        let secret = SecretBytes(vec![0x42; 32]);
+        assert_eq!(&*secret, &[0x42; 32][..]);
+        let debug = format!("{secret:?}");
+        assert_eq!(debug, "SecretBytes { len: 32, .. }");
     }
 }
