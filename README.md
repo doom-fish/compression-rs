@@ -21,14 +21,14 @@ the original `compression.h` FFI remains available behind the `raw-ffi` feature.
 
 ```toml
 [dependencies]
-compression-rs = "0.2"
+compression-rs = "0.3"
 ```
 
 Enable raw `compression.h` bindings when needed:
 
 ```toml
 [dependencies]
-compression-rs = { version = "0.2", features = ["raw-ffi"] }
+compression-rs = { version = "0.3", features = ["raw-ffi"] }
 ```
 
 ## Covered areas
