@@ -332,6 +332,8 @@ impl Clone for EntryAclBlob {
     }
 }
 
+unsafe impl Send for EntryAclBlob {}
+
 impl Drop for EntryAclBlob {
     fn drop(&mut self) {
         unsafe { ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_release(self.as_ptr()) };
@@ -592,6 +594,8 @@ impl Clone for EntryXatBlob {
         .expect("AAEntryXATBlobCreateWithEncodedData returned null")
     }
 }
+
+unsafe impl Send for EntryXatBlob {}
 
 impl Drop for EntryXatBlob {
     fn drop(&mut self) {

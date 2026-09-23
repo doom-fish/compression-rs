@@ -506,6 +506,8 @@ impl ByteStream {
     }
 }
 
+unsafe impl Send for ByteStream {}
+
 impl Drop for ByteStream {
     fn drop(&mut self) {
         unsafe { ffi::aa_byte_stream::compression_rs_aa_byte_stream_release(self.as_ptr()) };
@@ -531,34 +533,34 @@ struct CustomByteStreamState {
 }
 
 /// Wraps callbacks installed by `AACustomByteStreamSet*Proc`.
-pub trait CustomByteStreamCallbacks {
+pub trait CustomByteStreamCallbacks: Send + Sync {
     /// Wraps `AAByteStreamWrite`.
-    fn write(&mut self, _buffer: &[u8]) -> Result<usize> {
+    fn write(&self, _buffer: &[u8]) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamWrite"))
     }
 
     /// Wraps `AAByteStreamPWrite`.
-    fn pwrite(&mut self, _buffer: &[u8], _offset: i64) -> Result<usize> {
+    fn pwrite(&self, _buffer: &[u8], _offset: i64) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamPWrite"))
     }
 
     /// Wraps `AAByteStreamRead`.
-    fn read(&mut self, _buffer: &mut [u8]) -> Result<usize> {
+    fn read(&self, _buffer: &mut [u8]) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamRead"))
     }
 
     /// Wraps `AAByteStreamPRead`.
-    fn pread(&mut self, _buffer: &mut [u8], _offset: i64) -> Result<usize> {
+    fn pread(&self, _buffer: &mut [u8], _offset: i64) -> Result<usize> {
         Err(custom_byte_stream_error("AAByteStreamPRead"))
     }
 
     /// Wraps `AAByteStreamSeek`.
-    fn seek(&mut self, _offset: i64, _whence: i32) -> Result<i64> {
+    fn seek(&self, _offset: i64, _whence: i32) -> Result<i64> {
         Err(custom_byte_stream_error("AAByteStreamSeek"))
     }
 
     /// Wraps the `cancel` convenience for `CustomByteStreamCallbacks`.
-    fn cancel(&mut self) {}
+    fn cancel(&self) {}
 
     /// Wraps the `close` convenience for `CustomByteStreamCallbacks`.
     fn close(&mut self) -> Result<()> {
@@ -589,11 +591,11 @@ unsafe fn custom_byte_stream_slice_mut<'a>(
     }
 }
 
-unsafe fn custom_byte_stream_state(arg: *mut c_void) -> Option<&'static mut CustomByteStreamState> {
+unsafe fn custom_byte_stream_state<'a>(arg: *mut c_void) -> Option<&'a CustomByteStreamState> {
     if arg.is_null() {
         None
     } else {
-        Some(unsafe { &mut *arg.cast::<CustomByteStreamState>() })
+        Some(unsafe { &*arg.cast::<CustomByteStreamState>() })
     }
 }
 
@@ -763,5 +765,17 @@ impl ByteStream {
             );
         }
         Ok(stream)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const fn assert_send_sync<T: Send + Sync>() {}
+
+    #[test]
+    fn callback_state_shared_with_worker_threads_is_send_and_sync() {
+        assert_send_sync::<CustomByteStreamState>();
     }
 }

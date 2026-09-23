@@ -62,3 +62,18 @@ fn byte_stream_processes_compressed_output() -> Result<(), Box<dyn std::error::E
     decompressed_stream.close()?;
     Ok(())
 }
+
+#[test]
+fn shared_buffer_pipe_ends_work_on_different_threads() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut writer, mut reader) = ByteStream::shared_buffer_pipe(4096)?;
+    let payload = pseudo_random_bytes(256 * 1024);
+    let expected = payload.clone();
+    let producer = std::thread::spawn(move || -> compression::Result<()> {
+        writer.write_all(&payload)?;
+        writer.close()
+    });
+    let received = reader.read_to_end()?;
+    producer.join().expect("producer thread")?;
+    assert_eq!(received, expected);
+    Ok(())
+}

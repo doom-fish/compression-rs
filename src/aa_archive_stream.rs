@@ -6,6 +6,7 @@ use crate::{
     aa_header::Header,
     ffi, util, CompressionError, Result,
 };
+use doom_fish_utils::callback_context::CallbackContext;
 use doom_fish_utils::panic_safe::{
     catch_user_panic, catch_user_panic_result, catch_user_panic_result_with_cleanup,
 };
@@ -25,7 +26,7 @@ pub struct ArchiveStream {
     handle: NonNull<c_void>,
     _upstream: Option<ArchiveStreamUpstream>,
     closed: bool,
-    _message_handler: Option<Box<ArchiveMessageState>>,
+    _message_handler: Option<CallbackContext<ArchiveMessageState>>,
 }
 
 impl ArchiveStream {
@@ -275,6 +276,8 @@ impl ArchiveStream {
     }
 }
 
+unsafe impl Send for ArchiveStream {}
+
 impl Drop for ArchiveStream {
     fn drop(&mut self) {
         unsafe { ffi::aa_archive_stream::compression_rs_aa_archive_stream_release(self.as_ptr()) };
@@ -300,29 +303,29 @@ struct CustomArchiveStreamState {
 }
 
 /// Wraps callbacks installed by `AACustomArchiveStreamSet*Proc`.
-pub trait CustomArchiveStreamCallbacks {
+pub trait CustomArchiveStreamCallbacks: Send + Sync {
     /// Wraps `AAArchiveStreamWriteHeader`.
-    fn write_header(&mut self, _header: &Header) -> Result<()> {
+    fn write_header(&self, _header: &Header) -> Result<()> {
         Err(custom_archive_stream_error("AAArchiveStreamWriteHeader"))
     }
 
     /// Wraps `AAArchiveStreamWriteBlob`.
-    fn write_blob(&mut self, _key: FieldKey, _buffer: &[u8]) -> Result<()> {
+    fn write_blob(&self, _key: FieldKey, _buffer: &[u8]) -> Result<()> {
         Err(custom_archive_stream_error("AAArchiveStreamWriteBlob"))
     }
 
     /// Wraps `AAArchiveStreamReadHeader`.
-    fn read_header(&mut self) -> Result<Option<Header>> {
+    fn read_header(&self) -> Result<Option<Header>> {
         Err(custom_archive_stream_error("AAArchiveStreamReadHeader"))
     }
 
     /// Wraps `AAArchiveStreamReadBlob`.
-    fn read_blob(&mut self, _key: FieldKey, _buffer: &mut [u8]) -> Result<()> {
+    fn read_blob(&self, _key: FieldKey, _buffer: &mut [u8]) -> Result<()> {
         Err(custom_archive_stream_error("AAArchiveStreamReadBlob"))
     }
 
     /// Wraps the `cancel` convenience for `CustomArchiveStreamCallbacks`.
-    fn cancel(&mut self) {}
+    fn cancel(&self) {}
 
     /// Wraps the `close` convenience for `CustomArchiveStreamCallbacks`.
     fn close(&mut self) -> Result<()> {
@@ -330,13 +333,13 @@ pub trait CustomArchiveStreamCallbacks {
     }
 }
 
-unsafe fn custom_archive_stream_state(
+unsafe fn custom_archive_stream_state<'a>(
     arg: *mut c_void,
-) -> Option<&'static mut CustomArchiveStreamState> {
+) -> Option<&'a CustomArchiveStreamState> {
     if arg.is_null() {
         None
     } else {
-        Some(unsafe { &mut *arg.cast::<CustomArchiveStreamState>() })
+        Some(unsafe { &*arg.cast::<CustomArchiveStreamState>() })
     }
 }
 
@@ -595,16 +598,16 @@ pub struct EntryMessageEvent {
 }
 
 /// Wraps handlers installed through `AAEntryMessageProc`.
-pub trait EntryMessageHandler {
+pub trait EntryMessageHandler: Send + Sync {
     /// Wraps the `handle` convenience for `EntryMessageHandler`.
-    fn handle(&mut self, event: &mut EntryMessageEvent) -> Result<i32>;
+    fn handle(&self, event: &mut EntryMessageEvent) -> Result<i32>;
 }
 
 impl<F> EntryMessageHandler for F
 where
-    F: FnMut(&mut EntryMessageEvent) -> Result<i32>,
+    F: Fn(&mut EntryMessageEvent) -> Result<i32> + Send + Sync,
 {
-    fn handle(&mut self, event: &mut EntryMessageEvent) -> Result<i32> {
+    fn handle(&self, event: &mut EntryMessageEvent) -> Result<i32> {
         self(event)
     }
 }
@@ -613,24 +616,18 @@ struct ArchiveMessageState {
     handler: Box<dyn EntryMessageHandler>,
 }
 
-impl std::fmt::Debug for ArchiveMessageState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("ArchiveMessageState(..)")
-    }
+fn message_context<T: EntryMessageHandler + 'static>(
+    handler: T,
+) -> CallbackContext<ArchiveMessageState> {
+    CallbackContext::new(ArchiveMessageState {
+        handler: Box::new(handler),
+    })
 }
 
 fn archive_message_code(error: &CompressionError) -> i32 {
     match error {
         CompressionError::OperationFailed { code, .. } if *code < 0 => *code,
         _ => -1,
-    }
-}
-
-unsafe fn archive_message_state(arg: *mut c_void) -> Option<&'static mut ArchiveMessageState> {
-    if arg.is_null() {
-        None
-    } else {
-        Some(unsafe { &mut *arg.cast::<ArchiveMessageState>() })
     }
 }
 
@@ -737,16 +734,13 @@ unsafe extern "C" fn archive_entry_message_proc(
     path: *const c_char,
     data: *mut c_void,
 ) -> i32 {
-    let Some(state) = (unsafe { archive_message_state(arg) }) else {
-        return -1;
-    };
     let Some(message) = EntryMessage::from_raw(message_raw) else {
         return -1;
     };
     if path.is_null() {
         return -1;
     }
-    catch_user_panic_result("AAEntryMessageProc", || {
+    let handle = |state: &ArchiveMessageState| {
         let mut event = match archive_message_data(message, data) {
             Ok(event_data) => EntryMessageEvent {
                 message,
@@ -764,8 +758,9 @@ unsafe extern "C" fn archive_entry_message_proc(
             },
             Err(error) => archive_message_code(&error),
         }
-    })
-    .unwrap_or(-1)
+    };
+    unsafe { CallbackContext::<ArchiveMessageState>::with(arg, "AAEntryMessageProc", handle) }
+        .unwrap_or(-1)
 }
 
 impl ArchiveStream {
@@ -777,15 +772,13 @@ impl ArchiveStream {
         handler: T,
     ) -> Result<Self> {
         let dir = util::cstring("dir", dir)?;
-        let mut message_handler = Box::new(ArchiveMessageState {
-            handler: Box::new(handler),
-        });
+        let message_handler = message_context(handler);
         let handle = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_extract_archive_output_stream_open_with_messages(
                 dir.as_ptr(),
                 flags.bits(),
                 n_threads,
-                std::ptr::addr_of_mut!(*message_handler).cast::<c_void>(),
+                message_handler.as_ptr(),
                 Some(archive_entry_message_proc),
             )
         };
@@ -804,15 +797,13 @@ impl ArchiveStream {
         n_threads: i32,
         handler: T,
     ) -> Result<Self> {
-        let mut message_handler = Box::new(ArchiveMessageState {
-            handler: Box::new(handler),
-        });
+        let message_handler = message_context(handler);
         let handle = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_encode_archive_output_stream_open_with_messages(
                 stream.as_ptr(),
                 flags.bits(),
                 n_threads,
-                std::ptr::addr_of_mut!(*message_handler).cast::<c_void>(),
+                message_handler.as_ptr(),
                 Some(archive_entry_message_proc),
             )
         };
@@ -831,15 +822,13 @@ impl ArchiveStream {
         n_threads: i32,
         handler: T,
     ) -> Result<Self> {
-        let mut message_handler = Box::new(ArchiveMessageState {
-            handler: Box::new(handler),
-        });
+        let message_handler = message_context(handler);
         let handle = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_decode_archive_input_stream_open_with_messages(
                 stream.as_ptr(),
                 flags.bits(),
                 n_threads,
-                std::ptr::addr_of_mut!(*message_handler).cast::<c_void>(),
+                message_handler.as_ptr(),
                 Some(archive_entry_message_proc),
             )
         };
@@ -860,9 +849,7 @@ impl ArchiveStream {
         n_threads: i32,
         handler: T,
     ) -> Result<Self> {
-        let mut message_handler = Box::new(ArchiveMessageState {
-            handler: Box::new(handler),
-        });
+        let message_handler = message_context(handler);
         let handle = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_convert_archive_output_stream_open_with_messages(
                 stream.as_ptr(),
@@ -870,7 +857,7 @@ impl ArchiveStream {
                 remove_key_set.as_ptr(),
                 flags.bits(),
                 n_threads,
-                std::ptr::addr_of_mut!(*message_handler).cast::<c_void>(),
+                message_handler.as_ptr(),
                 Some(archive_entry_message_proc),
             )
         };
@@ -894,9 +881,7 @@ impl ArchiveStream {
     ) -> Result<()> {
         self.ensure_open()?;
         let dir = util::cstring("dir", dir)?;
-        let mut message_handler = Box::new(ArchiveMessageState {
-            handler: Box::new(handler),
-        });
+        let message_handler = message_context(handler);
         let status = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_archive_stream_write_path_list_with_messages(
                 self.as_ptr(),
@@ -905,7 +890,7 @@ impl ArchiveStream {
                 dir.as_ptr(),
                 flags.bits(),
                 n_threads,
-                std::ptr::addr_of_mut!(*message_handler).cast::<c_void>(),
+                message_handler.as_ptr(),
                 Some(archive_entry_message_proc),
             )
         };
@@ -922,18 +907,29 @@ impl ArchiveStream {
     ) -> Result<u64> {
         self.ensure_open()?;
         output.ensure_open()?;
-        let mut message_handler = Box::new(ArchiveMessageState {
-            handler: Box::new(handler),
-        });
+        let message_handler = message_context(handler);
         util::off_t_result("AAArchiveStreamProcess", unsafe {
             ffi::aa_archive_stream::compression_rs_aa_archive_stream_process_with_messages(
                 self.as_ptr(),
                 output.as_ptr(),
                 flags.bits(),
                 n_threads,
-                std::ptr::addr_of_mut!(*message_handler).cast::<c_void>(),
+                message_handler.as_ptr(),
                 Some(archive_entry_message_proc),
             )
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const fn assert_send_sync<T: Send + Sync>() {}
+
+    #[test]
+    fn callback_state_shared_with_worker_threads_is_send_and_sync() {
+        assert_send_sync::<CustomArchiveStreamState>();
+        assert_send_sync::<ArchiveMessageState>();
     }
 }

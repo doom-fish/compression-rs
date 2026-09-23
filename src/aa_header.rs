@@ -640,6 +640,8 @@ impl Clone for Header {
     }
 }
 
+unsafe impl Send for Header {}
+
 impl Drop for Header {
     fn drop(&mut self) {
         unsafe { ffi::aa_header::compression_rs_aa_header_release(self.as_ptr()) };

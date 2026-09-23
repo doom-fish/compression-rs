@@ -5,10 +5,9 @@ use compression::{
     CustomByteStreamCallbacks, EntryMessage, EntryMessageEvent, FieldKey, FieldKeySet, Header,
     PathList, DEFAULT_FILE_MODE, OPEN_CREATE, OPEN_READ_ONLY, OPEN_TRUNCATE, OPEN_WRITE_ONLY,
 };
-use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::fs;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use support::{artifact_dir, path_string};
 
 #[derive(Debug, Default)]
@@ -21,12 +20,12 @@ struct MemoryByteState {
 
 #[derive(Clone, Debug)]
 struct SharedMemoryByteStream {
-    inner: Rc<RefCell<MemoryByteState>>,
+    inner: Arc<Mutex<MemoryByteState>>,
 }
 
 impl CustomByteStreamCallbacks for SharedMemoryByteStream {
-    fn write(&mut self, buffer: &[u8]) -> compression::Result<usize> {
-        let mut state = self.inner.borrow_mut();
+    fn write(&self, buffer: &[u8]) -> compression::Result<usize> {
+        let mut state = self.inner.lock().unwrap();
         let start = state.position;
         let end = start + buffer.len();
         if end > state.data.len() {
@@ -34,40 +33,44 @@ impl CustomByteStreamCallbacks for SharedMemoryByteStream {
         }
         state.data[start..end].copy_from_slice(buffer);
         state.position = end;
+        drop(state);
         Ok(buffer.len())
     }
 
-    fn pwrite(&mut self, buffer: &[u8], offset: i64) -> compression::Result<usize> {
-        let mut state = self.inner.borrow_mut();
+    fn pwrite(&self, buffer: &[u8], offset: i64) -> compression::Result<usize> {
+        let mut state = self.inner.lock().unwrap();
         let start = usize::try_from(offset).unwrap_or(0);
         let end = start + buffer.len();
         if end > state.data.len() {
             state.data.resize(end, 0);
         }
         state.data[start..end].copy_from_slice(buffer);
+        drop(state);
         Ok(buffer.len())
     }
 
-    fn read(&mut self, buffer: &mut [u8]) -> compression::Result<usize> {
-        let mut state = self.inner.borrow_mut();
+    fn read(&self, buffer: &mut [u8]) -> compression::Result<usize> {
+        let mut state = self.inner.lock().unwrap();
         let available = state.data.len().saturating_sub(state.position);
         let count = available.min(buffer.len());
         buffer[..count].copy_from_slice(&state.data[state.position..state.position + count]);
         state.position += count;
+        drop(state);
         Ok(count)
     }
 
-    fn pread(&mut self, buffer: &mut [u8], offset: i64) -> compression::Result<usize> {
-        let state = self.inner.borrow();
+    fn pread(&self, buffer: &mut [u8], offset: i64) -> compression::Result<usize> {
+        let state = self.inner.lock().unwrap();
         let start = usize::try_from(offset).unwrap_or(0);
         let available = state.data.len().saturating_sub(start);
         let count = available.min(buffer.len());
         buffer[..count].copy_from_slice(&state.data[start..start + count]);
+        drop(state);
         Ok(count)
     }
 
-    fn seek(&mut self, offset: i64, whence: i32) -> compression::Result<i64> {
-        let mut state = self.inner.borrow_mut();
+    fn seek(&self, offset: i64, whence: i32) -> compression::Result<i64> {
+        let mut state = self.inner.lock().unwrap();
         let base = match whence {
             0 => 0_i64,
             1 => i64::try_from(state.position).unwrap_or(i64::MAX),
@@ -76,15 +79,16 @@ impl CustomByteStreamCallbacks for SharedMemoryByteStream {
         };
         let next = base + offset;
         state.position = usize::try_from(next).unwrap_or(0);
+        drop(state);
         Ok(next)
     }
 
-    fn cancel(&mut self) {
-        self.inner.borrow_mut().cancelled = true;
+    fn cancel(&self) {
+        self.inner.lock().unwrap().cancelled = true;
     }
 
     fn close(&mut self) -> compression::Result<()> {
-        self.inner.borrow_mut().closed = true;
+        self.inner.lock().unwrap().closed = true;
         Ok(())
     }
 }
@@ -101,37 +105,40 @@ struct MemoryArchiveState {
 
 #[derive(Clone, Debug)]
 struct SharedMemoryArchiveStream {
-    inner: Rc<RefCell<MemoryArchiveState>>,
+    inner: Arc<Mutex<MemoryArchiveState>>,
 }
 
 impl CustomArchiveStreamCallbacks for SharedMemoryArchiveStream {
-    fn write_header(&mut self, header: &Header) -> compression::Result<()> {
+    fn write_header(&self, header: &Header) -> compression::Result<()> {
         self.inner
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .written_headers
             .push(header.encoded_data()?);
         Ok(())
     }
 
-    fn write_blob(&mut self, key: FieldKey, buffer: &[u8]) -> compression::Result<()> {
+    fn write_blob(&self, key: FieldKey, buffer: &[u8]) -> compression::Result<()> {
         self.inner
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .written_blobs
             .push((key, buffer.to_vec()));
         Ok(())
     }
 
-    fn read_header(&mut self) -> compression::Result<Option<Header>> {
-        let Some(data) = self.inner.borrow_mut().read_headers.pop_front() else {
+    fn read_header(&self) -> compression::Result<Option<Header>> {
+        let Some(data) = self.inner.lock().unwrap().read_headers.pop_front() else {
             return Ok(None);
         };
         Ok(Some(Header::from_encoded_data(&data)?))
     }
 
-    fn read_blob(&mut self, key: FieldKey, buffer: &mut [u8]) -> compression::Result<()> {
+    fn read_blob(&self, key: FieldKey, buffer: &mut [u8]) -> compression::Result<()> {
         let (expected_key, data) = self
             .inner
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .read_blobs
             .pop_front()
             .expect("blob queued");
@@ -140,12 +147,12 @@ impl CustomArchiveStreamCallbacks for SharedMemoryArchiveStream {
         Ok(())
     }
 
-    fn cancel(&mut self) {
-        self.inner.borrow_mut().cancelled = true;
+    fn cancel(&self) {
+        self.inner.lock().unwrap().cancelled = true;
     }
 
     fn close(&mut self) -> compression::Result<()> {
-        self.inner.borrow_mut().closed = true;
+        self.inner.lock().unwrap().closed = true;
         Ok(())
     }
 }
@@ -153,7 +160,7 @@ impl CustomArchiveStreamCallbacks for SharedMemoryArchiveStream {
 #[test]
 #[allow(deprecated)]
 fn custom_byte_stream_supports_callbacks() -> Result<(), Box<dyn std::error::Error>> {
-    let state = Rc::new(RefCell::new(MemoryByteState::default()));
+    let state = Arc::new(Mutex::new(MemoryByteState::default()));
     let mut stream = ByteStream::custom(SharedMemoryByteStream {
         inner: state.clone(),
     })?;
@@ -169,7 +176,7 @@ fn custom_byte_stream_supports_callbacks() -> Result<(), Box<dyn std::error::Err
     stream.abort()?;
     stream.close()?;
 
-    let state = state.borrow();
+    let state = state.lock().unwrap();
     assert!(state.cancelled);
     assert!(state.closed);
     assert_eq!(state.data, b"hello world");
@@ -186,7 +193,7 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     header.append_field_uint(FieldKey::SIZ, payload.len() as u64)?;
     header.append_field_blob(FieldKey::DAT, payload.len() as u64)?;
 
-    let writer_state = Rc::new(RefCell::new(MemoryArchiveState::default()));
+    let writer_state = Arc::new(Mutex::new(MemoryArchiveState::default()));
     let mut writer = ArchiveStream::custom(SharedMemoryArchiveStream {
         inner: writer_state.clone(),
     })?;
@@ -194,12 +201,12 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     writer.write_blob(FieldKey::DAT, &payload)?;
     writer.close()?;
 
-    let written_header = writer_state.borrow().written_headers[0].clone();
-    let written_blob = writer_state.borrow().written_blobs[0].clone();
+    let written_header = writer_state.lock().unwrap().written_headers[0].clone();
+    let written_blob = writer_state.lock().unwrap().written_blobs[0].clone();
     assert_eq!(written_blob.0, FieldKey::DAT);
     assert_eq!(written_blob.1, payload);
 
-    let reader_state = Rc::new(RefCell::new(MemoryArchiveState {
+    let reader_state = Arc::new(Mutex::new(MemoryArchiveState {
         read_headers: VecDeque::from([written_header]),
         read_blobs: VecDeque::from([written_blob]),
         ..MemoryArchiveState::default()
@@ -215,8 +222,8 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     assert!(reader.read_header()?.is_none());
     reader.abort()?;
     reader.close()?;
-    assert!(reader_state.borrow().cancelled);
-    assert!(reader_state.borrow().closed);
+    assert!(reader_state.lock().unwrap().cancelled);
+    assert!(reader_state.lock().unwrap().closed);
 
     let artifact_dir = artifact_dir("archive-message-callbacks");
     let source_dir = artifact_dir.join("source");
@@ -233,7 +240,7 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
         DEFAULT_FILE_MODE,
     )?;
     let mut archive = ArchiveStream::encode_output(stream, ArchiveFlags::empty(), 0)?;
-    let write_events = Rc::new(RefCell::new(Vec::new()));
+    let write_events = Arc::new(Mutex::new(Vec::new()));
     let write_capture = write_events.clone();
     archive.write_path_list_with_messages(
         &path_list,
@@ -243,13 +250,14 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
         0,
         move |event: &mut EntryMessageEvent| {
             write_capture
-                .borrow_mut()
+                .lock()
+                .unwrap()
                 .push((event.message, event.path.clone()));
             Ok(0)
         },
     )?;
     archive.close()?;
-    assert!(write_events.borrow().iter().any(|(message, _)| {
+    assert!(write_events.lock().unwrap().iter().any(|(message, _)| {
         matches!(
             message,
             EntryMessage::EncodeScanning | EntryMessage::EncodeWriting
@@ -257,7 +265,7 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     }));
 
     let stream = ByteStream::open_with_path(&archive_path, OPEN_READ_ONLY, 0)?;
-    let read_events = Rc::new(RefCell::new(Vec::new()));
+    let read_events = Arc::new(Mutex::new(Vec::new()));
     let read_capture = read_events.clone();
     let mut archive = ArchiveStream::decode_input_with_messages(
         stream,
@@ -265,7 +273,8 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
         0,
         move |event: &mut EntryMessageEvent| {
             read_capture
-                .borrow_mut()
+                .lock()
+                .unwrap()
                 .push((event.message, event.path.clone()));
             Ok(0)
         },
@@ -281,7 +290,8 @@ fn custom_archive_stream_and_message_callbacks_work() -> Result<(), Box<dyn std:
     }
     assert_eq!(decoded.as_deref(), Some(b"archive callback".as_slice()));
     assert!(read_events
-        .borrow()
+        .lock()
+        .unwrap()
         .iter()
         .any(|(message, _)| *message == EntryMessage::DecodeReading));
 
@@ -348,4 +358,69 @@ fn panicking_message_handler_fails_the_operation_instead_of_aborting(
     );
     assert!(result.is_err());
     Ok(())
+}
+
+struct RandomAccessSource {
+    data: Vec<u8>,
+    threads: Arc<Mutex<std::collections::HashSet<std::thread::ThreadId>>>,
+}
+
+impl CustomByteStreamCallbacks for RandomAccessSource {
+    fn pread(&self, buffer: &mut [u8], offset: i64) -> compression::Result<usize> {
+        self.threads
+            .lock()
+            .unwrap()
+            .insert(std::thread::current().id());
+        let start = usize::try_from(offset)
+            .unwrap_or(usize::MAX)
+            .min(self.data.len());
+        let count = (self.data.len() - start).min(buffer.len());
+        buffer[..count].copy_from_slice(&self.data[start..start + count]);
+        Ok(count)
+    }
+}
+
+struct CollectingSink {
+    data: Arc<Mutex<Vec<u8>>>,
+}
+
+impl CustomByteStreamCallbacks for CollectingSink {
+    fn write(&self, buffer: &[u8]) -> compression::Result<usize> {
+        self.data.lock().unwrap().extend_from_slice(buffer);
+        Ok(buffer.len())
+    }
+}
+
+#[test]
+fn custom_streams_serve_concurrent_reader_threads() -> Result<(), Box<dyn std::error::Error>> {
+    let input = support::pseudo_random_bytes(1 << 20);
+    let threads = Arc::new(Mutex::new(std::collections::HashSet::new()));
+    let mut source = ByteStream::custom(RandomAccessSource {
+        data: input.clone(),
+        threads: threads.clone(),
+    })?;
+    let output = Arc::new(Mutex::new(Vec::new()));
+    let mut sink = ByteStream::custom(CollectingSink {
+        data: output.clone(),
+    })?;
+    let processed =
+        source.process_random_access_into(&mut sink, -1, 16 * 1024, ArchiveFlags::empty(), 4)?;
+    assert_eq!(processed, input.len() as u64);
+    sink.close()?;
+    source.close()?;
+    assert_eq!(*output.lock().unwrap(), input);
+    assert!(!threads.lock().unwrap().is_empty());
+    Ok(())
+}
+
+const fn assert_send<T: Send>() {}
+
+#[test]
+fn stream_and_payload_handles_are_send() {
+    assert_send::<ByteStream>();
+    assert_send::<ArchiveStream>();
+    assert_send::<Header>();
+    assert_send::<compression::EntryXatBlob>();
+    assert_send::<compression::EntryAclBlob>();
+    assert_send::<EntryMessageEvent>();
 }
