@@ -312,19 +312,20 @@ public func compressionRsAEAAuthDataGetEncodedSize(_ handle: UnsafeMutableRawPoi
 @_cdecl("compression_rs_aea_auth_data_copy_encoded_data")
 public func compressionRsAEAAuthDataCopyEncodedData(
     _ handle: UnsafeMutableRawPointer?,
-    _ dst: UnsafeMutablePointer<UInt8>?
-) -> Bool {
-    guard let handle else { return false }
-    guard #available(macOS 11.3, *) else { return false }
+    _ dst: UnsafeMutablePointer<UInt8>?,
+    _ capacity: Int
+) -> Int {
+    guard let handle else { return -1 }
+    guard #available(macOS 11.3, *) else { return -1 }
     let box: AEAAuthDataBox = unretained(handle, as: AEAAuthDataBox.self)
-    guard let raw = box.raw else { return false }
+    guard let raw = box.raw else { return -1 }
     let size = __AEAAuthDataGetEncodedSize(raw)
     if size == 0 {
-        return true
+        return 0
     }
-    guard let src = __AEAAuthDataGetEncodedData(raw), let dst else { return false }
+    guard size <= capacity, let src = __AEAAuthDataGetEncodedData(raw), let dst else { return -1 }
     memcpy(dst, src, size)
-    return true
+    return size
 }
 
 @_cdecl("compression_rs_aea_auth_data_release")

@@ -93,6 +93,7 @@ unsafe extern "C" {
     pub fn compression_rs_aea_auth_data_copy_encoded_data(
         handle: *mut c_void,
         dst: *mut u8,
-    ) -> bool;
+        capacity: usize,
+    ) -> isize;
     pub fn compression_rs_aea_auth_data_release(handle: *mut c_void);
 }

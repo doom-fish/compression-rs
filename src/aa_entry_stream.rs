@@ -1,7 +1,5 @@
-use crate::{
-    aa_byte_stream::ArchiveFlags, aa_header::Timespec, ffi, util, CompressionError, Result,
-};
-use std::ffi::{c_void, CStr};
+use crate::{aa_byte_stream::ArchiveFlags, aa_header::Timespec, ffi, util, Result};
+use std::ffi::c_void;
 use std::ptr::{null, NonNull};
 
 /// Wraps AppleArchive entry message identifiers.
@@ -199,24 +197,19 @@ impl PathList {
         };
         util::status_result("AAPathListNodeGetPath", status)?;
 
-        let mut buffer = vec![0_i8; length.saturating_add(1)];
+        let mut buffer = vec![0_u8; length.saturating_add(1)];
         let status = unsafe {
             ffi::aa_entry_stream::compression_rs_aa_path_list_node_get_path(
                 self.as_ptr(),
                 node,
                 buffer.len(),
-                buffer.as_mut_ptr(),
+                buffer.as_mut_ptr().cast(),
                 &mut length,
             )
         };
         util::status_result("AAPathListNodeGetPath", status)?;
 
-        let value = unsafe { CStr::from_ptr(buffer.as_ptr()) }
-            .to_str()
-            .map_err(|_| CompressionError::Utf8Error {
-                operation: "AAPathListNodeGetPath",
-            })?;
-        Ok(value.to_string())
+        util::string_from_nul_buffer("AAPathListNodeGetPath", &buffer)
     }
 
     /// Wraps iterative `AAPathListNode*` traversal.

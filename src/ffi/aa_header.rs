@@ -92,7 +92,11 @@ unsafe extern "C" {
         offset: *mut u64,
     ) -> i32;
     pub fn compression_rs_aa_header_get_encoded_size(handle: *mut c_void) -> usize;
-    pub fn compression_rs_aa_header_copy_encoded_data(handle: *mut c_void, dst: *mut u8) -> bool;
+    pub fn compression_rs_aa_header_copy_encoded_data(
+        handle: *mut c_void,
+        dst: *mut u8,
+        capacity: usize,
+    ) -> isize;
     pub fn compression_rs_aa_header_clone_from_raw(raw: *mut c_void) -> *mut c_void;
     pub fn compression_rs_aa_header_clone_raw(handle: *mut c_void) -> *mut c_void;
 }

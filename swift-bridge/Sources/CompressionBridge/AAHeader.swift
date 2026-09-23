@@ -293,18 +293,19 @@ public func compressionRsAAHeaderGetEncodedSize(_ handle: UnsafeMutableRawPointe
 @_cdecl("compression_rs_aa_header_copy_encoded_data")
 public func compressionRsAAHeaderCopyEncodedData(
     _ handle: UnsafeMutableRawPointer?,
-    _ dst: UnsafeMutablePointer<UInt8>?
-) -> Bool {
-    guard let handle else { return false }
+    _ dst: UnsafeMutablePointer<UInt8>?,
+    _ capacity: Int
+) -> Int {
+    guard let handle else { return -1 }
     let box: AAHeaderBox = unretained(handle, as: AAHeaderBox.self)
-    guard let raw = box.raw else { return false }
+    guard let raw = box.raw else { return -1 }
     let size = __AAHeaderGetEncodedSize(raw)
     if size == 0 {
-        return true
+        return 0
     }
-    guard let src = __AAHeaderGetEncodedData(raw), let dst else { return false }
+    guard size <= capacity, let src = __AAHeaderGetEncodedData(raw), let dst else { return -1 }
     memcpy(dst, src, size)
-    return true
+    return size
 }
 
 @_cdecl("compression_rs_aa_header_clone_from_raw")

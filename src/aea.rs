@@ -3,7 +3,7 @@ use crate::{
     aa_entry_blob::NamedBlobEntry,
     ffi, util, CompressionError, Result,
 };
-use std::ffi::{c_void, CStr};
+use std::ffi::c_void;
 use std::fmt;
 use std::ops::Deref;
 use std::ptr::{null, null_mut, NonNull};
@@ -788,14 +788,14 @@ impl AeaAuthData {
         };
         util::status_result("AEAAuthDataGetEntry", status)?;
 
-        let mut key = vec![0_i8; key_length.saturating_add(1)];
+        let mut key = vec![0_u8; key_length.saturating_add(1)];
         let mut value = vec![0_u8; data_size];
         let status = unsafe {
             ffi::aea::compression_rs_aea_auth_data_get_entry(
                 self.as_ptr(),
                 index,
                 key.len(),
-                key.as_mut_ptr(),
+                key.as_mut_ptr().cast(),
                 &mut key_length,
                 value.len(),
                 if value.is_empty() {
@@ -808,12 +808,14 @@ impl AeaAuthData {
         };
         util::status_result("AEAAuthDataGetEntry", status)?;
 
-        let key = unsafe { CStr::from_ptr(key.as_ptr()) }
-            .to_str()
-            .map_err(|_| CompressionError::Utf8Error {
+        if data_size > value.len() {
+            return Err(CompressionError::OperationFailed {
                 operation: "AEAAuthDataGetEntry",
-            })?
-            .to_string();
+                code: -1,
+            });
+        }
+        value.truncate(data_size);
+        let key = util::string_from_nul_buffer("AEAAuthDataGetEntry", &key)?;
 
         Ok(NamedBlobEntry { key, value })
     }
@@ -893,15 +895,18 @@ impl AeaAuthData {
             ffi::aea::compression_rs_aea_auth_data_copy_encoded_data(
                 self.as_ptr(),
                 data.as_mut_ptr(),
+                data.len(),
             )
         };
-        if copied {
-            Ok(data)
-        } else {
-            Err(CompressionError::OperationFailed {
+        match usize::try_from(copied) {
+            Ok(copied) if copied <= data.len() => {
+                data.truncate(copied);
+                Ok(data)
+            }
+            _ => Err(CompressionError::OperationFailed {
                 operation: "AEAAuthDataGetEncodedData",
                 code: -1,
-            })
+            }),
         }
     }
 }

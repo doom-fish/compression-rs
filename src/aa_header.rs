@@ -3,7 +3,7 @@ use crate::{
     aa_field_key::{FieldKey, FieldKeySet},
     ffi, util, CompressionError, Result,
 };
-use std::ffi::{c_void, CStr};
+use std::ffi::c_void;
 use std::ptr::{null_mut, NonNull};
 
 /// Wraps AppleArchive hash function identifiers.
@@ -459,24 +459,19 @@ impl Header {
         };
         util::status_result("AAHeaderGetFieldString", status)?;
 
-        let mut buffer = vec![0_i8; length.saturating_add(1)];
+        let mut buffer = vec![0_u8; length.saturating_add(1)];
         let status = unsafe {
             ffi::aa_header::compression_rs_aa_header_get_field_string(
                 self.as_ptr(),
                 index,
                 buffer.len(),
-                buffer.as_mut_ptr(),
+                buffer.as_mut_ptr().cast(),
                 &mut length,
             )
         };
         util::status_result("AAHeaderGetFieldString", status)?;
 
-        let value = unsafe { CStr::from_ptr(buffer.as_ptr()) }
-            .to_str()
-            .map_err(|_| CompressionError::Utf8Error {
-                operation: "AAHeaderGetFieldString",
-            })?;
-        Ok(value.to_string())
+        util::string_from_nul_buffer("AAHeaderGetFieldString", &buffer)
     }
 
     /// Wraps `AAHeaderGetFieldHash`.
@@ -620,15 +615,18 @@ impl Header {
             ffi::aa_header::compression_rs_aa_header_copy_encoded_data(
                 self.as_ptr(),
                 data.as_mut_ptr(),
+                data.len(),
             )
         };
-        if copied {
-            Ok(data)
-        } else {
-            Err(CompressionError::OperationFailed {
+        match usize::try_from(copied) {
+            Ok(copied) if copied <= data.len() => {
+                data.truncate(copied);
+                Ok(data)
+            }
+            _ => Err(CompressionError::OperationFailed {
                 operation: "AAHeaderGetEncodedData",
                 code: -1,
-            })
+            }),
         }
     }
 }

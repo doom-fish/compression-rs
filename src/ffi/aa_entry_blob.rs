@@ -54,7 +54,8 @@ unsafe extern "C" {
     pub fn compression_rs_aa_entry_acl_blob_copy_encoded_data(
         handle: *mut c_void,
         dst: *mut u8,
-    ) -> bool;
+        capacity: usize,
+    ) -> isize;
     pub fn compression_rs_aa_entry_acl_blob_clone_from_raw(raw: *mut c_void) -> *mut c_void;
     pub fn compression_rs_aa_entry_acl_blob_clear_raw(raw: *mut c_void) -> i32;
     pub fn compression_rs_aa_entry_acl_blob_append_entry_raw(
@@ -114,7 +115,8 @@ unsafe extern "C" {
     pub fn compression_rs_aa_entry_xat_blob_copy_encoded_data(
         handle: *mut c_void,
         dst: *mut u8,
-    ) -> bool;
+        capacity: usize,
+    ) -> isize;
     pub fn compression_rs_aa_entry_xat_blob_clone_from_raw(raw: *mut c_void) -> *mut c_void;
     pub fn compression_rs_aa_entry_xat_blob_clear_raw(raw: *mut c_void) -> i32;
     pub fn compression_rs_aa_entry_xat_blob_append_entry_raw(

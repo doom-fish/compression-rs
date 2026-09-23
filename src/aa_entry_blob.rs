@@ -1,5 +1,5 @@
 use crate::{aa_byte_stream::ArchiveFlags, ffi, util, CompressionError, Result};
-use std::ffi::{c_void, CStr};
+use std::ffi::c_void;
 use std::ptr::{null, null_mut, NonNull};
 
 /// Wraps the AppleArchive ACL tag field type.
@@ -308,15 +308,18 @@ impl EntryAclBlob {
             ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_copy_encoded_data(
                 self.as_ptr(),
                 data.as_mut_ptr(),
+                data.len(),
             )
         };
-        if copied {
-            Ok(data)
-        } else {
-            Err(CompressionError::OperationFailed {
+        match usize::try_from(copied) {
+            Ok(copied) if copied <= data.len() => {
+                data.truncate(copied);
+                Ok(data)
+            }
+            _ => Err(CompressionError::OperationFailed {
                 operation: "AAEntryACLBlobGetEncodedData",
                 code: -1,
-            })
+            }),
         }
     }
 }
@@ -462,14 +465,14 @@ impl EntryXatBlob {
         };
         util::status_result("AAEntryXATBlobGetEntry", status)?;
 
-        let mut key = vec![0_i8; key_length.saturating_add(1)];
+        let mut key = vec![0_u8; key_length.saturating_add(1)];
         let mut value = vec![0_u8; data_size];
         let status = unsafe {
             ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_get_entry(
                 self.as_ptr(),
                 index,
                 key.len(),
-                key.as_mut_ptr(),
+                key.as_mut_ptr().cast(),
                 &mut key_length,
                 value.len(),
                 if value.is_empty() {
@@ -482,12 +485,14 @@ impl EntryXatBlob {
         };
         util::status_result("AAEntryXATBlobGetEntry", status)?;
 
-        let key = unsafe { CStr::from_ptr(key.as_ptr()) }
-            .to_str()
-            .map_err(|_| CompressionError::Utf8Error {
+        if data_size > value.len() {
+            return Err(CompressionError::OperationFailed {
                 operation: "AAEntryXATBlobGetEntry",
-            })?
-            .to_string();
+                code: -1,
+            });
+        }
+        value.truncate(data_size);
+        let key = util::string_from_nul_buffer("AAEntryXATBlobGetEntry", &key)?;
 
         Ok(NamedBlobEntry { key, value })
     }
@@ -571,15 +576,18 @@ impl EntryXatBlob {
             ffi::aa_entry_blob::compression_rs_aa_entry_xat_blob_copy_encoded_data(
                 self.as_ptr(),
                 data.as_mut_ptr(),
+                data.len(),
             )
         };
-        if copied {
-            Ok(data)
-        } else {
-            Err(CompressionError::OperationFailed {
+        match usize::try_from(copied) {
+            Ok(copied) if copied <= data.len() => {
+                data.truncate(copied);
+                Ok(data)
+            }
+            _ => Err(CompressionError::OperationFailed {
                 operation: "AAEntryXATBlobGetEncodedData",
                 code: -1,
-            })
+            }),
         }
     }
 }

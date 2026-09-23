@@ -1,5 +1,5 @@
 use crate::{ffi, util, CompressionError, Result};
-use std::ffi::{c_void, CStr};
+use std::ffi::c_void;
 use std::fmt;
 use std::ptr::NonNull;
 
@@ -277,22 +277,17 @@ impl FieldKeySet {
             .saturating_mul(4)
             .saturating_add(1)
             .max(1);
-        let mut buffer = vec![0_i8; capacity];
+        let mut buffer = vec![0_u8; capacity];
         let status = unsafe {
             ffi::aa_field_key::compression_rs_aa_field_key_set_serialize(
                 self.as_ptr(),
                 buffer.len(),
-                buffer.as_mut_ptr(),
+                buffer.as_mut_ptr().cast(),
             )
         };
         util::status_result("AAFieldKeySetSerialize", status)?;
 
-        let value = unsafe { CStr::from_ptr(buffer.as_ptr()) }
-            .to_str()
-            .map_err(|_| CompressionError::Utf8Error {
-                operation: "AAFieldKeySetSerialize",
-            })?;
-        Ok(value.to_string())
+        util::string_from_nul_buffer("AAFieldKeySetSerialize", &buffer)
     }
 }
 

@@ -152,18 +152,19 @@ public func compressionRsAAEntryACLBlobGetEncodedSize(_ handle: UnsafeMutableRaw
 @_cdecl("compression_rs_aa_entry_acl_blob_copy_encoded_data")
 public func compressionRsAAEntryACLBlobCopyEncodedData(
     _ handle: UnsafeMutableRawPointer?,
-    _ dst: UnsafeMutablePointer<UInt8>?
-) -> Bool {
-    guard let handle else { return false }
+    _ dst: UnsafeMutablePointer<UInt8>?,
+    _ capacity: Int
+) -> Int {
+    guard let handle else { return -1 }
     let box: AAEntryACLBlobBox = unretained(handle, as: AAEntryACLBlobBox.self)
-    guard let raw = box.raw else { return false }
+    guard let raw = box.raw else { return -1 }
     let size = __AAEntryACLBlobGetEncodedSize(raw)
     if size == 0 {
-        return true
+        return 0
     }
-    guard let src = __AAEntryACLBlobGetEncodedData(raw), let dst else { return false }
+    guard size <= capacity, let src = __AAEntryACLBlobGetEncodedData(raw), let dst else { return -1 }
     memcpy(dst, src, size)
-    return true
+    return size
 }
 
 @_cdecl("compression_rs_aa_entry_acl_blob_clone_from_raw")
@@ -339,18 +340,19 @@ public func compressionRsAAEntryXATBlobGetEncodedSize(_ handle: UnsafeMutableRaw
 @_cdecl("compression_rs_aa_entry_xat_blob_copy_encoded_data")
 public func compressionRsAAEntryXATBlobCopyEncodedData(
     _ handle: UnsafeMutableRawPointer?,
-    _ dst: UnsafeMutablePointer<UInt8>?
-) -> Bool {
-    guard let handle else { return false }
+    _ dst: UnsafeMutablePointer<UInt8>?,
+    _ capacity: Int
+) -> Int {
+    guard let handle else { return -1 }
     let box: AAEntryXATBlobBox = unretained(handle, as: AAEntryXATBlobBox.self)
-    guard let raw = box.raw else { return false }
+    guard let raw = box.raw else { return -1 }
     let size = __AAEntryXATBlobGetEncodedSize(raw)
     if size == 0 {
-        return true
+        return 0
     }
-    guard let src = __AAEntryXATBlobGetEncodedData(raw), let dst else { return false }
+    guard size <= capacity, let src = __AAEntryXATBlobGetEncodedData(raw), let dst else { return -1 }
     memcpy(dst, src, size)
-    return true
+    return size
 }
 
 @_cdecl("compression_rs_aa_entry_xat_blob_clone_from_raw")
