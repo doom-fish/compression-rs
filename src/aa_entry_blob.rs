@@ -180,13 +180,13 @@ impl EntryAclBlob {
             ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_get_entry(
                 self.as_ptr(),
                 index,
-                &mut tag,
-                &mut perms,
-                &mut flags,
-                &mut qualifier_type,
+                &raw mut tag,
+                &raw mut perms,
+                &raw mut flags,
+                &raw mut qualifier_type,
                 0,
                 null_mut(),
-                &mut qualifier_size,
+                &raw mut qualifier_size,
             )
         };
         util::status_result("AAEntryACLBlobGetEntry", status)?;
@@ -196,17 +196,17 @@ impl EntryAclBlob {
             ffi::aa_entry_blob::compression_rs_aa_entry_acl_blob_get_entry(
                 self.as_ptr(),
                 index,
-                &mut tag,
-                &mut perms,
-                &mut flags,
-                &mut qualifier_type,
+                &raw mut tag,
+                &raw mut perms,
+                &raw mut flags,
+                &raw mut qualifier_type,
                 qualifier.len(),
                 if qualifier.is_empty() {
                     null_mut()
                 } else {
                     qualifier.as_mut_ptr()
                 },
-                &mut qualifier_size,
+                &raw mut qualifier_size,
             )
         };
         util::status_result("AAEntryACLBlobGetEntry", status)?;
@@ -457,10 +457,10 @@ impl EntryXatBlob {
                 index,
                 0,
                 null_mut(),
-                &mut key_length,
+                &raw mut key_length,
                 0,
                 null_mut(),
-                &mut data_size,
+                &raw mut data_size,
             )
         };
         util::status_result("AAEntryXATBlobGetEntry", status)?;
@@ -473,14 +473,14 @@ impl EntryXatBlob {
                 index,
                 key.len(),
                 key.as_mut_ptr().cast(),
-                &mut key_length,
+                &raw mut key_length,
                 value.len(),
                 if value.is_empty() {
                     null_mut()
                 } else {
                     value.as_mut_ptr()
                 },
-                &mut data_size,
+                &raw mut data_size,
             )
         };
         util::status_result("AAEntryXATBlobGetEntry", status)?;

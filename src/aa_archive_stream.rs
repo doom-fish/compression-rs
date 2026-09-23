@@ -154,7 +154,7 @@ impl ArchiveStream {
         let handle = unsafe {
             ffi::aa_archive_stream::compression_rs_aa_archive_stream_read_header_new(
                 self.as_ptr(),
-                &mut status,
+                &raw mut status,
             )
         };
         match status {

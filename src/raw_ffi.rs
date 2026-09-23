@@ -41,7 +41,7 @@ pub const COMPRESSION_STATUS_END: compression_status = 1;
 
 /// Wraps `compression_stream` values used by Compression or AppleArchive.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct compression_stream {
     /// Wraps the `dst_ptr` field of `compression_stream`.
     pub dst_ptr: *mut u8,
@@ -53,6 +53,18 @@ pub struct compression_stream {
     pub src_size: usize,
     /// Wraps the `state` field of `compression_stream`.
     pub state: *mut c_void,
+}
+
+impl Default for compression_stream {
+    fn default() -> Self {
+        Self {
+            dst_ptr: std::ptr::null_mut(),
+            dst_size: 0,
+            src_ptr: std::ptr::null(),
+            src_size: 0,
+            state: std::ptr::null_mut(),
+        }
+    }
 }
 
 unsafe extern "C" {
@@ -91,4 +103,18 @@ unsafe extern "C" {
     ) -> compression_status;
     /// Wraps the `compression_stream_destroy` convenience for `Compression`.
     pub fn compression_stream_destroy(stream: *mut compression_stream) -> compression_status;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_stream_is_empty() {
+        let stream = compression_stream::default();
+        assert!(stream.dst_ptr.is_null());
+        assert!(stream.src_ptr.is_null());
+        assert!(stream.state.is_null());
+        assert_eq!((stream.dst_size, stream.src_size), (0, 0));
+    }
 }

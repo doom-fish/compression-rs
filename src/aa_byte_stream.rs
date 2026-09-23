@@ -235,8 +235,8 @@ impl ByteStream {
         let mut istream = std::ptr::null_mut();
         let status = unsafe {
             ffi::aa_byte_stream::compression_rs_aa_shared_buffer_pipe_open(
-                &mut ostream,
-                &mut istream,
+                &raw mut ostream,
+                &raw mut istream,
                 buffer_capacity,
             )
         };

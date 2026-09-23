@@ -192,7 +192,7 @@ impl PathList {
                 node,
                 0,
                 std::ptr::null_mut(),
-                &mut length,
+                &raw mut length,
             )
         };
         util::status_result("AAPathListNodeGetPath", status)?;
@@ -204,7 +204,7 @@ impl PathList {
                 node,
                 buffer.len(),
                 buffer.as_mut_ptr().cast(),
-                &mut length,
+                &raw mut length,
             )
         };
         util::status_result("AAPathListNodeGetPath", status)?;

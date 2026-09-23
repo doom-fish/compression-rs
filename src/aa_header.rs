@@ -438,7 +438,7 @@ impl Header {
             ffi::aa_header::compression_rs_aa_header_get_field_uint(
                 self.as_ptr(),
                 index,
-                &mut value,
+                &raw mut value,
             )
         };
         util::status_result("AAHeaderGetFieldUInt", status)?;
@@ -454,7 +454,7 @@ impl Header {
                 index,
                 0,
                 null_mut(),
-                &mut length,
+                &raw mut length,
             )
         };
         util::status_result("AAHeaderGetFieldString", status)?;
@@ -466,7 +466,7 @@ impl Header {
                 index,
                 buffer.len(),
                 buffer.as_mut_ptr().cast(),
-                &mut length,
+                &raw mut length,
             )
         };
         util::status_result("AAHeaderGetFieldString", status)?;
@@ -483,7 +483,7 @@ impl Header {
                 self.as_ptr(),
                 index,
                 bytes.len(),
-                &mut function,
+                &raw mut function,
                 bytes.as_mut_ptr(),
             )
         };
@@ -505,8 +505,8 @@ impl Header {
             ffi::aa_header::compression_rs_aa_header_get_field_timespec(
                 self.as_ptr(),
                 index,
-                &mut seconds,
-                &mut nanoseconds,
+                &raw mut seconds,
+                &raw mut nanoseconds,
             )
         };
         util::status_result("AAHeaderGetFieldTimespec", status)?;
@@ -524,8 +524,8 @@ impl Header {
             ffi::aa_header::compression_rs_aa_header_get_field_blob(
                 self.as_ptr(),
                 index,
-                &mut size,
-                &mut offset,
+                &raw mut size,
+                &raw mut offset,
             )
         };
         util::status_result("AAHeaderGetFieldBlob", status)?;

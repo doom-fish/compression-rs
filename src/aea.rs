@@ -780,10 +780,10 @@ impl AeaAuthData {
                 index,
                 0,
                 null_mut(),
-                &mut key_length,
+                &raw mut key_length,
                 0,
                 null_mut(),
-                &mut data_size,
+                &raw mut data_size,
             )
         };
         util::status_result("AEAAuthDataGetEntry", status)?;
@@ -796,14 +796,14 @@ impl AeaAuthData {
                 index,
                 key.len(),
                 key.as_mut_ptr().cast(),
-                &mut key_length,
+                &raw mut key_length,
                 value.len(),
                 if value.is_empty() {
                     null_mut()
                 } else {
                     value.as_mut_ptr()
                 },
-                &mut data_size,
+                &raw mut data_size,
             )
         };
         util::status_result("AEAAuthDataGetEntry", status)?;
