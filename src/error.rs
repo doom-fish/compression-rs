@@ -46,6 +46,10 @@ pub enum CompressionError {
         algorithm: Algorithm,
         max_output_len: usize,
     },
+    ReadLimitExceeded {
+        operation: &'static str,
+        max_len: usize,
+    },
     /// Wraps the `StreamFinished` failure case reported by Compression or AppleArchive helpers.
     StreamFinished {
         /// Wraps the failing Compression or AppleArchive entry-point name.
@@ -133,6 +137,9 @@ impl fmt::Display for CompressionError {
                 f,
                 "{operation} would produce more than {max_output_len} bytes for {algorithm:?}"
             ),
+            Self::ReadLimitExceeded { operation, max_len } => {
+                write!(f, "{operation} would read more than {max_len} bytes")
+            }
             Self::StreamFinished {
                 operation,
                 algorithm,

@@ -1,8 +1,8 @@
 mod support;
 
 use compression::{
-    ArchiveCompressionAlgorithm, ArchiveFlags, ByteStream, DEFAULT_FILE_MODE, OPEN_CREATE,
-    OPEN_READ_ONLY, OPEN_TRUNCATE, OPEN_WRITE_ONLY,
+    ArchiveCompressionAlgorithm, ArchiveFlags, ByteStream, CompressionError, DEFAULT_FILE_MODE,
+    OPEN_CREATE, OPEN_READ_ONLY, OPEN_TRUNCATE, OPEN_WRITE_ONLY,
 };
 use std::fs;
 use support::{artifact_dir, path_string, pseudo_random_bytes};
@@ -57,7 +57,7 @@ fn byte_stream_processes_compressed_output() -> Result<(), Box<dyn std::error::E
         ByteStream::open_with_path(&path_string(&compressed_path), OPEN_READ_ONLY, 0)?;
     let mut decompressed_stream =
         compressed_stream.into_decompression_input(ArchiveFlags::empty(), 0)?;
-    let output = decompressed_stream.read_to_end()?;
+    let output = decompressed_stream.read_to_end(input.len())?;
     assert_eq!(output, input);
     decompressed_stream.close()?;
     Ok(())
@@ -72,7 +72,7 @@ fn shared_buffer_pipe_ends_work_on_different_threads() -> Result<(), Box<dyn std
         writer.write_all(&payload)?;
         writer.close()
     });
-    let received = reader.read_to_end()?;
+    let received = reader.read_to_end(expected.len())?;
     producer.join().expect("producer thread")?;
     assert_eq!(received, expected);
     Ok(())
@@ -91,7 +91,58 @@ fn owned_fds_and_files_are_handed_to_the_stream() -> Result<(), Box<dyn std::err
     from_fd.close()?;
 
     let mut from_file = ByteStream::from_file(fs::File::open(&path)?)?;
-    assert_eq!(from_file.read_to_end()?, b"owned descriptor");
+    assert_eq!(from_file.read_to_end(16)?, b"owned descriptor");
     from_file.close()?;
+    Ok(())
+}
+
+#[test]
+fn read_to_end_stops_a_decompression_bomb() -> Result<(), Box<dyn std::error::Error>> {
+    const PAYLOAD_LEN: usize = 32 * 1024 * 1024;
+    let artifact_dir = artifact_dir("aa-byte-stream-bomb");
+    let bomb_path = artifact_dir.join("bomb.lzfse");
+    let bomb = path_string(&bomb_path);
+
+    let file = ByteStream::open_with_path(
+        &bomb,
+        OPEN_WRITE_ONLY | OPEN_CREATE | OPEN_TRUNCATE,
+        DEFAULT_FILE_MODE,
+    )?;
+    let mut compressed = file.into_compression_output(
+        ArchiveCompressionAlgorithm::Lzfse,
+        1024 * 1024,
+        ArchiveFlags::empty(),
+        0,
+    )?;
+    let zeros = vec![0_u8; 1024 * 1024];
+    for _ in 0..PAYLOAD_LEN / zeros.len() {
+        compressed.write_all(&zeros)?;
+    }
+    compressed.close()?;
+    drop(compressed);
+    assert!(fs::metadata(&bomb_path)?.len() < 64 * 1024);
+
+    let open = || -> compression::Result<ByteStream> {
+        ByteStream::open_with_path(&bomb, OPEN_READ_ONLY, 0)?
+            .into_decompression_input(ArchiveFlags::empty(), 0)
+    };
+    assert!(matches!(
+        open()?.read_to_end(1024 * 1024),
+        Err(CompressionError::ReadLimitExceeded {
+            max_len: 1_048_576,
+            ..
+        })
+    ));
+    assert!(matches!(
+        open()?.read_to_end(PAYLOAD_LEN - 1),
+        Err(CompressionError::ReadLimitExceeded { .. })
+    ));
+    assert!(matches!(
+        open()?.read_to_end(0),
+        Err(CompressionError::ReadLimitExceeded { max_len: 0, .. })
+    ));
+    let output = open()?.read_to_end(PAYLOAD_LEN)?;
+    assert_eq!(output.len(), PAYLOAD_LEN);
+    assert!(output.iter().all(|&byte| byte == 0));
     Ok(())
 }

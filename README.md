@@ -75,6 +75,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   `decompress_with_max_output_len`, `Decoder::with_max_output_len` or
   `CompressionStream::with_max_output_len` to choose another limit. Buffer-only
   algorithms are decoded once into a buffer of `max_output_len + 1` bytes.
+- `ByteStream::read_to_end` takes a `max_len` and fails with
+  `CompressionError::ReadLimitExceeded` once the stream yields more, so reading
+  an AppleArchive decompression or AEA decryption stream is bounded too.
 - `compression_decode_buffer` reports a destination that is too small as
   `OutputLimitExceeded` instead of silently truncating, and accepts inputs that
   decode to zero bytes.

@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut decrypt_context = AeaContext::from_encrypted_stream(&mut input)?;
     decrypt_context.set_symmetric_key(&symmetric_key)?;
     let mut decrypted = decrypt_context.decryption_input_stream(input, ArchiveFlags::empty(), 0)?;
-    assert_eq!(decrypted.read_to_end()?, payload);
+    assert_eq!(decrypted.read_to_end(payload.len())?, payload);
 
     println!(
         "raw_size={} container_size={}",

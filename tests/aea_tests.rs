@@ -104,7 +104,7 @@ fn aea_round_trips_and_exposes_context_helpers() -> Result<(), Box<dyn std::erro
     assert_eq!(extracted_auth.entry(0)?.value, b"chunked".to_vec());
     let mut decrypted =
         decrypt_context.decryption_input_stream(decrypt_source, ArchiveFlags::empty(), 0)?;
-    assert_eq!(decrypted.read_to_end()?, combined);
+    assert_eq!(decrypted.read_to_end(combined.len())?, combined);
     decrypted.close()?;
 
     let mut random_source = ByteStream::open_with_path(&archive_path, OPEN_READ_ONLY, 0)?;

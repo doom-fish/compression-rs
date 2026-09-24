@@ -2,8 +2,8 @@ mod common;
 
 use common::{artifact_dir, path_string, pseudo_random_bytes};
 use compression::{
-    ArchiveCompressionAlgorithm, ArchiveFlags, ByteStream, DEFAULT_FILE_MODE, OPEN_CREATE,
-    OPEN_READ_ONLY, OPEN_TRUNCATE, OPEN_WRITE_ONLY,
+    ArchiveCompressionAlgorithm, ArchiveFlags, ByteStream, DEFAULT_FILE_MODE,
+    DEFAULT_MAX_OUTPUT_LEN, OPEN_CREATE, OPEN_READ_ONLY, OPEN_TRUNCATE, OPEN_WRITE_ONLY,
 };
 use std::fs;
 
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ByteStream::open_with_path(&path_string(&compressed_path), OPEN_READ_ONLY, 0)?;
     let mut decompressed_stream =
         compressed_stream.into_decompression_input(ArchiveFlags::empty(), 0)?;
-    let output = decompressed_stream.read_to_end()?;
+    let output = decompressed_stream.read_to_end(DEFAULT_MAX_OUTPUT_LEN)?;
     assert_eq!(output, input);
     decompressed_stream.close()?;
 

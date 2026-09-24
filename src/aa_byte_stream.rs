@@ -434,13 +434,21 @@ impl ByteStream {
     }
 
     /// Wraps repeated `AAByteStreamRead` calls.
-    pub fn read_to_end(&mut self) -> Result<Vec<u8>> {
+    pub fn read_to_end(&mut self, max_len: usize) -> Result<Vec<u8>> {
         let mut output = Vec::new();
+        let mut buffer = vec![0_u8; READ_CHUNK_LEN];
         loop {
-            let mut buffer = vec![0_u8; READ_CHUNK_LEN];
-            let read = self.read(&mut buffer)?;
+            let allowance = max_len.saturating_sub(output.len());
+            let window = READ_CHUNK_LEN.min(allowance.saturating_add(1));
+            let read = self.read(&mut buffer[..window])?;
             if read == 0 {
                 return Ok(output);
+            }
+            if read > allowance {
+                return Err(CompressionError::ReadLimitExceeded {
+                    operation: "AAByteStreamRead",
+                    max_len,
+                });
             }
             output.extend_from_slice(&buffer[..read]);
         }
