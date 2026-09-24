@@ -9,32 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- **Breaking:** decoding is bounded. `Decoder::new`, decode `CompressionStream`s and `decompress` fail with the new `CompressionError::OutputLimitExceeded` after `DEFAULT_MAX_OUTPUT_LEN` (64 MiB) of output, so a small zlib, LZMA or Brotli bomb can no longer exhaust memory. `Decoder::with_max_output_len`, `CompressionStream::with_max_output_len` and `decompress_with_max_output_len` choose another limit.
-- **Breaking:** AEA key material from `AeaContext::field_blob`, `main_key` and `signature_encryption_key` is returned as `SecretBytes` instead of `Vec<u8>`; it redacts its `Debug` output and wipes its memory on drop.
+- Decoding is bounded, so a small zlib, LZMA or Brotli bomb can no longer exhaust memory through `Decoder`, decode `CompressionStream`s, `decompress` or `ByteStream::read_to_end` (see Changed).
+- AEA key material returned by `AeaContext` is redacted in `Debug` output and wiped from memory on drop (see Changed).
 
 ### Fixed
 
-- **Breaking (soundness):** AppleArchive calls custom stream callbacks and entry message handlers from its worker threads, where non-thread-safe state raced and concurrent calls aliased `&mut`. `CustomByteStreamCallbacks`, `CustomArchiveStreamCallbacks` and `EntryMessageHandler` now require `Send + Sync` and take `&self` (`close` keeps `&mut self`); handler closures must be `Fn + Send + Sync`.
+- AppleArchive calls custom stream callbacks and entry message handlers from its worker threads, where non-thread-safe state raced and concurrent calls aliased `&mut` (see Changed for the new bounds).
 - A panic in an entry message handler, or while the custom stream state is dropped on close, no longer aborts the process; every callback goes through `doom_fish_utils::panic_safe` and a panic fails the operation.
-- `compression_decode_buffer` reports a destination that is too small as `OutputLimitExceeded` instead of returning `Ok(dst.len())`, and accepts valid encodings of empty data. The buffer-only `decompress` path decodes once instead of up to 15 times.
+- `compression_decode_buffer` no longer reports silently truncated output as success, and accepts valid encodings of empty data. The buffer-only `decompress` path decodes once instead of up to 15 times.
 - The Swift bridge copies of encoded `AAHeader`, `AEAAuthData`, ACL and XAT data now respect the destination capacity, entry values are truncated to their reported size, and returned strings are parsed within their buffers.
 - `AeaContext::field_blob` truncates to the size reported by its second call.
 - A custom byte stream callback that reports more bytes than its buffer holds now fails the operation instead of making AppleArchive treat memory past the buffer as data, and `ByteStream::read`, `write`, `pread` and `pwrite` reject such counts.
-- **Breaking (soundness):** `ByteStream::from_fd` takes an `OwnedFd`, so the stream can no longer close a descriptor it does not own. The previous behavior is available as the `unsafe` `ByteStream::from_raw_fd`.
+- `ByteStream::from_fd` can no longer make AppleArchive close a descriptor the caller still owns (see Changed).
+- Cloning a handle no longer panics when the SDK fails to copy it (see Changed).
 - `CompressionStream::process` returns `StreamStalled` instead of looping forever when the stream stops making progress.
 - `ByteStream::into_random_access_decompression_input` works on macOS 11: `AADecompressionRandomAccessInputStreamOpen` is available from macOS 11.0, but the bridge refused it before macOS 12.
 
 ### Changed
 
-- **Breaking:** `ByteStream::read_to_end` takes a `max_len` and fails with the new `CompressionError::ReadLimitExceeded` once the stream yields more, instead of growing without bound. This also bounds AppleArchive decompression and AEA decryption streams.
+- **Breaking:** `Decoder::new`, decode `CompressionStream`s and `decompress` fail with `CompressionError::OutputLimitExceeded` after `DEFAULT_MAX_OUTPUT_LEN` (64 MiB) of output. `Decoder::with_max_output_len`, `CompressionStream::with_max_output_len` and `decompress_with_max_output_len` choose another limit.
+- **Breaking:** `ByteStream::read_to_end` takes a `max_len` and fails with `CompressionError::ReadLimitExceeded` once the stream yields more, instead of growing without bound. This also bounds AppleArchive decompression and AEA decryption streams.
+- **Breaking:** `compression_decode_buffer` returns `CompressionError::OutputLimitExceeded` when the destination is too small, where it used to return `Ok(dst.len())`.
+- **Breaking:** `CustomByteStreamCallbacks`, `CustomArchiveStreamCallbacks` and `EntryMessageHandler` require `Send + Sync` and take `&self` (`close` keeps `&mut self`); handler closures must be `Fn + Send + Sync`.
+- **Breaking:** `AeaContext::field_blob`, `main_key` and `signature_encryption_key` return `SecretBytes` instead of `Vec<u8>`.
+- **Breaking:** `ByteStream::from_fd` takes an `OwnedFd`; the previous behavior is the `unsafe` `ByteStream::from_raw_fd`.
 - **Breaking:** `Header`, `FieldKeySet`, `EntryAclBlob`, `EntryXatBlob` and `AeaAuthData` no longer implement `Clone`, whose impls panicked when the SDK failed to copy the object. Use the new fallible `try_clone`, which returns an independent deep copy.
+- **Breaking:** `CompressionError` has the new variants `OutputLimitExceeded` and `ReadLimitExceeded`.
 - `ByteStream`, `ArchiveStream`, `Header`, `EntryXatBlob` and `EntryAclBlob` are `Send`.
 - `rust-version` is now 1.82, which the crate's `unsafe extern` blocks already required.
 - Depends on `doom-fish-utils` 0.4.1 for panic containment and callback contexts.
 
 ### Added
 
-- `DEFAULT_MAX_OUTPUT_LEN`, `decompress_with_max_output_len`, `Decoder::with_max_output_len`, `CompressionStream::with_max_output_len`, `CompressionError::OutputLimitExceeded`, `CompressionError::ReadLimitExceeded`, `SecretBytes`, `ByteStream::from_raw_fd` and `try_clone` on `Header`, `FieldKeySet`, `EntryAclBlob`, `EntryXatBlob` and `AeaAuthData`.
+- `DEFAULT_MAX_OUTPUT_LEN`, `decompress_with_max_output_len`, `Decoder::with_max_output_len`, `CompressionStream::with_max_output_len`, `SecretBytes`, `ByteStream::from_raw_fd` and `try_clone` on `Header`, `FieldKeySet`, `EntryAclBlob`, `EntryXatBlob` and `AeaAuthData`.
 
 ### Removed
 
