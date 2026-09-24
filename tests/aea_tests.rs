@@ -61,11 +61,12 @@ fn aea_round_trips_and_exposes_context_helpers() -> Result<(), Box<dyn std::erro
     auth_data.remove_entry(0)?;
     assert_eq!(auth_data.entry_count(), 1);
     assert_eq!(auth_data.entry(0)?.key, "mode");
-    let cloned_auth = auth_data.clone();
+    let cloned_auth = auth_data.try_clone()?;
     context.set_auth_data_blob(&cloned_auth)?;
-    let mut cleared_auth = cloned_auth.clone();
+    let mut cleared_auth = cloned_auth.try_clone()?;
     cleared_auth.clear()?;
     assert!(cleared_auth.is_empty());
+    assert_eq!(cloned_auth.entry_count(), 1);
 
     let stream = ByteStream::open_with_path(
         &archive_path,

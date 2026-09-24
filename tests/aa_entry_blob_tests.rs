@@ -91,3 +91,22 @@ fn entry_acl_and_xat_blobs_round_trip() -> Result<(), Box<dyn std::error::Error>
 
     Ok(())
 }
+
+#[test]
+fn try_clone_copies_acl_and_xat_blobs_independently() -> Result<(), Box<dyn std::error::Error>> {
+    let mut xat = EntryXatBlob::new()?;
+    xat.append_entry(&NamedBlobEntry {
+        key: "com.doomfish.test".to_string(),
+        value: b"value".to_vec(),
+    })?;
+    let mut xat_copy = xat.try_clone()?;
+    assert_eq!(xat_copy.entry(0)?.value, b"value".to_vec());
+    xat_copy.clear()?;
+    assert!(xat_copy.is_empty());
+    assert_eq!(xat.entry_count(), 1);
+
+    let acl = EntryAclBlob::new()?;
+    let acl_copy = acl.try_clone()?;
+    assert_eq!(acl_copy.entry_count(), acl.entry_count());
+    Ok(())
+}

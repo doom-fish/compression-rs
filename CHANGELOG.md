@@ -26,13 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** `ByteStream::read_to_end` takes a `max_len` and fails with the new `CompressionError::ReadLimitExceeded` once the stream yields more, instead of growing without bound. This also bounds AppleArchive decompression and AEA decryption streams.
+- **Breaking:** `Header`, `FieldKeySet`, `EntryAclBlob`, `EntryXatBlob` and `AeaAuthData` no longer implement `Clone`, whose impls panicked when the SDK failed to copy the object. Use the new fallible `try_clone`, which returns an independent deep copy.
 - `ByteStream`, `ArchiveStream`, `Header`, `EntryXatBlob` and `EntryAclBlob` are `Send`.
 - `rust-version` is now 1.82, which the crate's `unsafe extern` blocks already required.
 - Depends on `doom-fish-utils` 0.4.1 for panic containment and callback contexts.
 
 ### Added
 
-- `DEFAULT_MAX_OUTPUT_LEN`, `decompress_with_max_output_len`, `Decoder::with_max_output_len`, `CompressionStream::with_max_output_len`, `CompressionError::OutputLimitExceeded`, `SecretBytes` and `ByteStream::from_raw_fd`.
+- `DEFAULT_MAX_OUTPUT_LEN`, `decompress_with_max_output_len`, `Decoder::with_max_output_len`, `CompressionStream::with_max_output_len`, `CompressionError::OutputLimitExceeded`, `CompressionError::ReadLimitExceeded`, `SecretBytes`, `ByteStream::from_raw_fd` and `try_clone` on `Header`, `FieldKeySet`, `EntryAclBlob`, `EntryXatBlob` and `AeaAuthData`.
 
 ### Removed
 

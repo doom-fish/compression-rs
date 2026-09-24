@@ -36,3 +36,14 @@ fn header_round_trips_encoded_data_and_assignment() -> Result<(), Box<dyn std::e
     assert!(assigned.is_empty());
     Ok(())
 }
+
+#[test]
+fn try_clone_makes_an_independent_copy() -> Result<(), Box<dyn std::error::Error>> {
+    let mut header = Header::new()?;
+    header.append_field_string(FieldKey::PAT, "original.txt")?;
+    let mut copy = header.try_clone()?;
+    copy.clear()?;
+    assert!(copy.is_empty());
+    assert_eq!(header.path()?.as_deref(), Some("original.txt"));
+    Ok(())
+}

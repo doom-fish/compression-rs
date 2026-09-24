@@ -631,10 +631,10 @@ impl Header {
     }
 }
 
-impl Clone for Header {
-    fn clone(&self) -> Self {
+impl Header {
+    pub fn try_clone(&self) -> Result<Self> {
         let handle = unsafe { ffi::aa_header::compression_rs_aa_header_clone(self.as_ptr()) };
-        Self::from_handle(handle, "AAHeaderClone").expect("AAHeaderClone returned null")
+        Self::from_handle(handle, "AAHeaderClone")
     }
 }
 

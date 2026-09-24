@@ -911,15 +911,13 @@ impl AeaAuthData {
     }
 }
 
-impl Clone for AeaAuthData {
-    fn clone(&self) -> Self {
-        let mut clone = Self::new().expect("AEAAuthDataCreate returned null");
-        for entry in self.entries().expect("AEAAuthDataGetEntry failed") {
-            clone
-                .append_entry(&entry)
-                .expect("AEAAuthDataAppendEntry failed");
+impl AeaAuthData {
+    pub fn try_clone(&self) -> Result<Self> {
+        let mut clone = Self::new()?;
+        for entry in self.entries()? {
+            clone.append_entry(&entry)?;
         }
-        clone
+        Ok(clone)
     }
 }
 

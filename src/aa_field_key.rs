@@ -291,14 +291,13 @@ impl FieldKeySet {
     }
 }
 
-impl Clone for FieldKeySet {
-    fn clone(&self) -> Self {
+impl FieldKeySet {
+    pub fn try_clone(&self) -> Result<Self> {
         let handle =
             unsafe { ffi::aa_field_key::compression_rs_aa_field_key_set_clone(self.as_ptr()) };
-        Self {
-            handle: util::nonnull_handle(handle, "AAFieldKeySetClone")
-                .expect("AAFieldKeySetClone returned null"),
-        }
+        Ok(Self {
+            handle: util::nonnull_handle(handle, "AAFieldKeySetClone")?,
+        })
     }
 }
 

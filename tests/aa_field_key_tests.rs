@@ -6,8 +6,9 @@ fn field_key_set_supports_clone_and_set_ops() -> Result<(), Box<dyn std::error::
     key_set.insert(FieldKey::SIZ)?;
     key_set.remove(FieldKey::DAT)?;
 
-    let mut clone = key_set.clone();
+    let mut clone = key_set.try_clone()?;
     clone.insert(FieldKey::UID)?;
+    assert!(!key_set.contains(FieldKey::UID)?);
     key_set.insert_set(&clone)?;
 
     assert!(key_set.contains(FieldKey::PAT)?);

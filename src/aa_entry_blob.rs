@@ -324,14 +324,9 @@ impl EntryAclBlob {
     }
 }
 
-impl Clone for EntryAclBlob {
-    fn clone(&self) -> Self {
-        Self::from_encoded_data(
-            &self
-                .encoded_data()
-                .expect("AAEntryACLBlobGetEncodedData returned invalid data"),
-        )
-        .expect("AAEntryACLBlobCreateWithEncodedData returned null")
+impl EntryAclBlob {
+    pub fn try_clone(&self) -> Result<Self> {
+        Self::from_encoded_data(&self.encoded_data()?)
     }
 }
 
@@ -592,14 +587,9 @@ impl EntryXatBlob {
     }
 }
 
-impl Clone for EntryXatBlob {
-    fn clone(&self) -> Self {
-        Self::from_encoded_data(
-            &self
-                .encoded_data()
-                .expect("AAEntryXATBlobGetEncodedData returned invalid data"),
-        )
-        .expect("AAEntryXATBlobCreateWithEncodedData returned null")
+impl EntryXatBlob {
+    pub fn try_clone(&self) -> Result<Self> {
+        Self::from_encoded_data(&self.encoded_data()?)
     }
 }
 
