@@ -10,7 +10,6 @@ the original `compression.h` FFI remains available behind the `raw-ffi` feature.
 
 - macOS 11 or later. `AeaAuthData` and
   `AeaContext::close_encryption_output_stream` need macOS 11.3;
-  `ByteStream::into_random_access_decompression_input`,
   `ByteStream::process_random_access_into` and
   `AeaContext::generate_field_blob` need macOS 12; and
   `AeaContext::decrypt_attributes` needs macOS 13. On older systems they return

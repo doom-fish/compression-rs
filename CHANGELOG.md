@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A custom byte stream callback that reports more bytes than its buffer holds now fails the operation instead of making AppleArchive treat memory past the buffer as data, and `ByteStream::read`, `write`, `pread` and `pwrite` reject such counts.
 - **Breaking (soundness):** `ByteStream::from_fd` takes an `OwnedFd`, so the stream can no longer close a descriptor it does not own. The previous behavior is available as the `unsafe` `ByteStream::from_raw_fd`.
 - `CompressionStream::process` returns `StreamStalled` instead of looping forever when the stream stops making progress.
+- `ByteStream::into_random_access_decompression_input` works on macOS 11: `AADecompressionRandomAccessInputStreamOpen` is available from macOS 11.0, but the bridge refused it before macOS 12.
 
 ### Changed
 

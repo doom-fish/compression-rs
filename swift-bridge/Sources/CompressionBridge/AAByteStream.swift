@@ -113,7 +113,6 @@ public func compressionRsAADecompressionRandomAccessInputStreamOpen(
     _ nThreads: Int32
 ) -> UnsafeMutableRawPointer? {
     guard let handle else { return nil }
-    guard #available(macOS 12.0, *) else { return nil }
     let box: AAByteStreamBox = unretained(handle, as: AAByteStreamBox.self)
     guard let raw = box.raw,
           let stream = __AADecompressionRandomAccessInputStreamOpen(raw, allocLimit, __AAFlagSet(flags), nThreads)

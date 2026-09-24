@@ -146,3 +146,37 @@ fn read_to_end_stops_a_decompression_bomb() -> Result<(), Box<dyn std::error::Er
     assert!(output.iter().all(|&byte| byte == 0));
     Ok(())
 }
+
+#[test]
+fn random_access_decompression_reads_at_offsets() -> Result<(), Box<dyn std::error::Error>> {
+    let input = pseudo_random_bytes(512 * 1024);
+    let artifact_dir = artifact_dir("aa-byte-stream-random-access");
+    let compressed = path_string(&artifact_dir.join("payload.pbzx"));
+
+    let file = ByteStream::open_with_path(
+        &compressed,
+        OPEN_WRITE_ONLY | OPEN_CREATE | OPEN_TRUNCATE,
+        DEFAULT_FILE_MODE,
+    )?;
+    let mut writer = file.into_compression_output(
+        ArchiveCompressionAlgorithm::Lzfse,
+        64 * 1024,
+        ArchiveFlags::empty(),
+        0,
+    )?;
+    writer.write_all(&input)?;
+    writer.close()?;
+    drop(writer);
+
+    let mut reader = ByteStream::open_with_path(&compressed, OPEN_READ_ONLY, 0)?
+        .into_random_access_decompression_input(64 * 1024 * 1024, ArchiveFlags::empty(), 0)?;
+    let offset = 300_000;
+    let mut window = vec![0_u8; 4096];
+    assert_eq!(
+        reader.pread(&mut window, i64::try_from(offset)?)?,
+        window.len()
+    );
+    assert_eq!(window, input[offset..offset + window.len()]);
+    reader.close()?;
+    Ok(())
+}
