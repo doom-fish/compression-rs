@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `compression_decode_buffer` reports a destination that is too small as `OutputLimitExceeded` instead of returning `Ok(dst.len())`, and accepts valid encodings of empty data. The buffer-only `decompress` path decodes once instead of up to 15 times.
 - The Swift bridge copies of encoded `AAHeader`, `AEAAuthData`, ACL and XAT data now respect the destination capacity, entry values are truncated to their reported size, and returned strings are parsed within their buffers.
 - `AeaContext::field_blob` truncates to the size reported by its second call.
+- A custom byte stream callback that reports more bytes than its buffer holds now fails the operation instead of making AppleArchive treat memory past the buffer as data, and `ByteStream::read`, `write`, `pread` and `pwrite` reject such counts.
 - **Breaking (soundness):** `ByteStream::from_fd` takes an `OwnedFd`, so the stream can no longer close a descriptor it does not own. The previous behavior is available as the `unsafe` `ByteStream::from_raw_fd`.
 - `CompressionStream::process` returns `StreamStalled` instead of looping forever when the stream stops making progress.
 

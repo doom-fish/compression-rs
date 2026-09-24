@@ -424,3 +424,31 @@ fn stream_and_payload_handles_are_send() {
     assert_send::<compression::EntryAclBlob>();
     assert_send::<EntryMessageEvent>();
 }
+
+struct OverreportingStream;
+
+impl CustomByteStreamCallbacks for OverreportingStream {
+    fn write(&self, buffer: &[u8]) -> compression::Result<usize> {
+        Ok(buffer.len() + 1)
+    }
+
+    fn read(&self, buffer: &mut [u8]) -> compression::Result<usize> {
+        Ok(buffer.len() + 1)
+    }
+
+    fn pread(&self, buffer: &mut [u8], _offset: i64) -> compression::Result<usize> {
+        Ok(buffer.len() * 2)
+    }
+}
+
+#[test]
+fn byte_counts_larger_than_the_buffer_are_errors() -> Result<(), Box<dyn std::error::Error>> {
+    let mut stream = ByteStream::custom(OverreportingStream)?;
+    let mut buffer = [0_u8; 16];
+    assert!(stream.write(b"abc").is_err());
+    assert!(stream.read(&mut buffer).is_err());
+    assert!(stream.pread(&mut buffer, 0).is_err());
+    assert!(stream.read_to_end(1024).is_err());
+    stream.close()?;
+    Ok(())
+}

@@ -363,13 +363,17 @@ impl ByteStream {
     /// Wraps `AAByteStreamWrite`.
     pub fn write(&mut self, buffer: &[u8]) -> Result<usize> {
         self.ensure_open()?;
-        util::ssize_result("AAByteStreamWrite", unsafe {
-            ffi::aa_byte_stream::compression_rs_aa_byte_stream_write(
-                self.as_ptr(),
-                buffer.as_ptr(),
-                buffer.len(),
-            )
-        })
+        io_count(
+            "AAByteStreamWrite",
+            unsafe {
+                ffi::aa_byte_stream::compression_rs_aa_byte_stream_write(
+                    self.as_ptr(),
+                    buffer.as_ptr(),
+                    buffer.len(),
+                )
+            },
+            buffer.len(),
+        )
     }
 
     /// Wraps `AAByteStreamWrite`.
@@ -390,39 +394,51 @@ impl ByteStream {
     /// Wraps `AAByteStreamPWrite`.
     pub fn pwrite(&mut self, buffer: &[u8], offset: i64) -> Result<usize> {
         self.ensure_open()?;
-        util::ssize_result("AAByteStreamPWrite", unsafe {
-            ffi::aa_byte_stream::compression_rs_aa_byte_stream_pwrite(
-                self.as_ptr(),
-                buffer.as_ptr(),
-                buffer.len(),
-                offset,
-            )
-        })
+        io_count(
+            "AAByteStreamPWrite",
+            unsafe {
+                ffi::aa_byte_stream::compression_rs_aa_byte_stream_pwrite(
+                    self.as_ptr(),
+                    buffer.as_ptr(),
+                    buffer.len(),
+                    offset,
+                )
+            },
+            buffer.len(),
+        )
     }
 
     /// Wraps `AAByteStreamRead`.
     pub fn read(&mut self, buffer: &mut [u8]) -> Result<usize> {
         self.ensure_open()?;
-        util::ssize_result("AAByteStreamRead", unsafe {
-            ffi::aa_byte_stream::compression_rs_aa_byte_stream_read(
-                self.as_ptr(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )
-        })
+        io_count(
+            "AAByteStreamRead",
+            unsafe {
+                ffi::aa_byte_stream::compression_rs_aa_byte_stream_read(
+                    self.as_ptr(),
+                    buffer.as_mut_ptr(),
+                    buffer.len(),
+                )
+            },
+            buffer.len(),
+        )
     }
 
     /// Wraps `AAByteStreamPRead`.
     pub fn pread(&mut self, buffer: &mut [u8], offset: i64) -> Result<usize> {
         self.ensure_open()?;
-        util::ssize_result("AAByteStreamPRead", unsafe {
-            ffi::aa_byte_stream::compression_rs_aa_byte_stream_pread(
-                self.as_ptr(),
-                buffer.as_mut_ptr(),
-                buffer.len(),
-                offset,
-            )
-        })
+        io_count(
+            "AAByteStreamPRead",
+            unsafe {
+                ffi::aa_byte_stream::compression_rs_aa_byte_stream_pread(
+                    self.as_ptr(),
+                    buffer.as_mut_ptr(),
+                    buffer.len(),
+                    offset,
+                )
+            },
+            buffer.len(),
+        )
     }
 
     /// Wraps `AAByteStreamSeek`.
@@ -534,6 +550,26 @@ fn custom_byte_stream_error(operation: &'static str) -> CompressionError {
     }
 }
 
+fn io_count(operation: &'static str, value: i64, len: usize) -> Result<usize> {
+    let count = util::ssize_result(operation, value)?;
+    if count > len {
+        Err(CompressionError::OperationFailed {
+            operation,
+            code: -1,
+        })
+    } else {
+        Ok(count)
+    }
+}
+
+fn callback_count(count: usize, length: usize) -> i64 {
+    if count > length {
+        -1
+    } else {
+        i64::try_from(count).unwrap_or(-1)
+    }
+}
+
 fn custom_byte_stream_code(error: &CompressionError) -> i32 {
     match error {
         CompressionError::OperationFailed { code, .. } if *code < 0 => *code,
@@ -625,7 +661,7 @@ unsafe extern "C" fn custom_byte_stream_write(
     };
     catch_user_panic_result("AAByteStreamWriteProc", || {
         match state.callbacks.write(buffer) {
-            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Ok(count) => callback_count(count, length),
             Err(error) => i64::from(custom_byte_stream_code(&error)),
         }
     })
@@ -646,7 +682,7 @@ unsafe extern "C" fn custom_byte_stream_pwrite(
     };
     catch_user_panic_result("AAByteStreamPWriteProc", || {
         match state.callbacks.pwrite(buffer, offset) {
-            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Ok(count) => callback_count(count, length),
             Err(error) => i64::from(custom_byte_stream_code(&error)),
         }
     })
@@ -666,7 +702,7 @@ unsafe extern "C" fn custom_byte_stream_read(
     };
     catch_user_panic_result("AAByteStreamReadProc", || {
         match state.callbacks.read(buffer) {
-            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Ok(count) => callback_count(count, length),
             Err(error) => i64::from(custom_byte_stream_code(&error)),
         }
     })
@@ -687,7 +723,7 @@ unsafe extern "C" fn custom_byte_stream_pread(
     };
     catch_user_panic_result("AAByteStreamPReadProc", || {
         match state.callbacks.pread(buffer, offset) {
-            Ok(count) => i64::try_from(count).unwrap_or(i64::MAX),
+            Ok(count) => callback_count(count, length),
             Err(error) => i64::from(custom_byte_stream_code(&error)),
         }
     })
