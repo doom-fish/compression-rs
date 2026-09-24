@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cloning a handle no longer panics when the SDK fails to copy it (see Changed).
 - `CompressionStream::process` returns `StreamStalled` instead of looping forever when the stream stops making progress.
 - `ByteStream::into_random_access_decompression_input` works on macOS 11: `AADecompressionRandomAccessInputStreamOpen` is available from macOS 11.0, but the bridge refused it before macOS 12.
+- `build.rs` no longer adds the toolchain's Swift 5.5 back-deployment directory (`usr/lib/swift-5.5/macosx`) to the link search path or rpath. Its old `libswift_Concurrency.dylib` could shadow the SDK's `libswift_Concurrency.tbd` for the whole binary and break linking next to Swift bridges that use newer concurrency APIs.
 
 ### Changed
 
