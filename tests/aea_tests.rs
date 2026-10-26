@@ -78,7 +78,7 @@ fn aea_round_trips_and_exposes_context_helpers() -> Result<(), Box<dyn std::erro
     context.close_encryption_output_stream(&mut encrypted)?;
     assert_eq!(context.raw_size()?, payload.len() as u64);
     assert!(context.container_size()? > 0);
-    assert!(!context.archive_identifier()?.is_empty());
+    assert_ne!(context.archive_identifier()?, [] as [u8; 0]);
 
     let symmetric_key = context.field_blob(
         AeaContextField::SymmetricKey,
